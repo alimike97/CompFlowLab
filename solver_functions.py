@@ -80,30 +80,30 @@ def ic_generator(solver_param):
 
 def add_ghost_cell(rho , vx , P ,sol_time):
 
-    # rho[0:2]   = rho[3]
-    # vx[0:2]    = vx[3]
-    # P[0:2]     = P[3]
+    rho[0:2]   = rho[3]
+    vx[0:2]    = vx[3]
+    P[0:2]     = P[3]
 
-    # rho[-2:-1] = rho[-3]
-    # vx[-2:-1]  = vx[-3]
-    # P[-2:-1]   = P[-3]
+    rho[-2:] = rho[-3]
+    vx[-2:]  = vx[-3]
+    P[-2:]   = P[-3]
 
     
-    rho[0:2]   = rho[-4:-2]
-    vx[0:2]    = vx[-4:-2]
-    P[0:2]     = P[-4:-2]
+    # rho[0:2]   = rho[-4:-2]
+    # vx[0:2]    = vx[-4:-2]
+    # P[0:2]     = P[-4:-2]
 
-    rho[-2:] = rho[2:4]
-    vx[-2:]  = vx[2:4]
-    P[-2:]   = P[2:4]
+    # rho[-2:] = rho[2:4]
+    # vx[-2:]  = vx[2:4]
+    # P[-2:]   = P[2:4]
 
-    rho[1]   = rho[-3]
-    vx[1]    = vx[-3]
-    P[1]     = P[-3]
+    # rho[1]   = rho[-3]
+    # vx[1]    = vx[-3]
+    # P[1]     = P[-3]
 
-    rho[-2] = rho[2]
-    vx[-2]  = vx[2]
-    P[-2]   = P[2]
+    # rho[-2] = rho[2]
+    # vx[-2]  = vx[2]
+    # P[-2]   = P[2]
 
     # if periodic_inlet:
          
@@ -119,17 +119,17 @@ def add_ghost_cell(rho , vx , P ,sol_time):
 
 def prim2cons_converter(rho , vx , P , gamma , vol):
 
-    mass   = rho * vol
-    momx   =  rho * vx * vol
-    energy = (P/(gamma-1) + 0.5 * rho * (vx**2)) * vol
+    mass   = rho 
+    momx   = rho * vx 
+    energy = (P/(gamma-1) + 0.5 * rho * (vx**2)) 
 
     return mass , momx , energy
 
 def cons2prim_converter(mass , momx , energy , gamma , vol,sol_time):
 
-    rho = mass / vol
-    vx  = momx / rho / vol
-    P   = (energy/vol - (0.5 * rho * (vx**2))) * (gamma-1)
+    rho = mass 
+    vx  = momx / rho 
+    P   = (energy - (0.5 * rho * (vx**2))) * (gamma-1)
 
     rho , vx , P = add_ghost_cell(rho,vx,P,sol_time)
 
@@ -150,43 +150,103 @@ def slope_limit(f, dx, df_dx):
 
 def extrapolate_center2face( var , d_var , dx):
 
-    var_left_face  = var - (d_var * dx/2)
-    var_left_face  = np.roll(var_left_face,-1)
-    var_right_face = var + (d_var * dx/2)
+    # var_left_face  = var - (d_var * dx/2)
+    # var_left_face  = np.roll(var_left_face,-1)
+    # var_right_face = var + (d_var * dx/2)
+
+    var_left_face  = np.zeros(len(var)+1)
+    var_right_face = np.zeros(len(var)+1)
+    for indx in range(1,len(var)-1):
+
+        var_left_face[indx]  = var[indx-1] + d_var[indx-1] * (dx/2)
+        var_right_face[indx] = var[indx] - d_var[indx] * (dx/2)
 
     return var_left_face , var_right_face
 
-def flux_calculator(rho_face_left , rho_face_right , vx_face_left , vx_face_right , p_face_left , p_face_right , gamma):
+def rusanov_flux_calculator(rho_face_left , rho_face_right , vx_face_left , vx_face_right , p_face_left , p_face_right , gamma):
 
     en_L = p_face_left  / (gamma-1) + 0.5 * rho_face_left  * (vx_face_left**2)
     en_R = p_face_right / (gamma-1) + 0.5 * rho_face_right * (vx_face_right**2)
 
-	# compute star (averaged) states
-    rho_star  = 0.5*(rho_face_left + rho_face_right)
-    momx_star = 0.5*(rho_face_left * vx_face_left + rho_face_right * vx_face_right)
-    en_star   = 0.5*(en_L + en_R)
-	
-    P_star = (gamma-1)*(en_star-0.5*(momx_star**2)/rho_star)
-	
-	# compute fluxes (local Lax-Friedrichs/Rusanov)
-    flux_mass   = momx_star
-    flux_momx   = momx_star**2/rho_star + P_star
-    flux_energy = (en_star+P_star) * momx_star/rho_star
-	
-	# find wavespeeds
-    C_L = np.sqrt(gamma * p_face_left  / rho_face_left  ) + np.abs(vx_face_left)
-    C_R = np.sqrt(gamma * p_face_right / rho_face_right ) + np.abs(vx_face_right)
-    C   = np.maximum( C_L, C_R )
-	
-	# add stabilizing diffusive term
-    flux_mass   -= C * 0.5 * (rho_face_left - rho_face_right)
-    flux_momx   -= C * 0.5 * (rho_face_left * vx_face_left - rho_face_right * vx_face_right)
-    flux_energy -= C * 0.5 * ( en_L - en_R )
+    C_L = np.sqrt(gamma*p_face_left/rho_face_left)
+    C_R = np.sqrt(gamma*p_face_right/rho_face_right)   
+
+    C_mean = 0.5*(C_L+C_R)
+    vx_mean = 0.5*(vx_face_left+vx_face_right)
+
+    diffusion =  0.5 * (C_mean + vx_mean)
+
+    flux_mass   = 0.5*(rho_face_left*vx_face_left + rho_face_right*vx_face_right)                               - diffusion*(rho_face_right-rho_face_left)
+    flux_momx   = 0.5*(rho_face_left*vx_face_left**2+p_face_left + rho_face_right*vx_face_right**2+p_face_right)- diffusion*(rho_face_right*vx_face_right-rho_face_left*vx_face_left)
+    flux_energy = 0.5*(vx_face_left*(en_L+p_face_left) + vx_face_right*(en_R+p_face_right))                     - diffusion*(en_R-en_L)
+
+    return flux_mass, flux_momx, flux_energy
+
+def roe_flux_calculator(mass , momx , energy , gamma , vol):
+
+    
+    Q_cons       = np.vstack((mass , momx , energy))
+    rho , vx , press = cons2prim_converter(mass,momx,energy,gamma,vol,0)
+
+    # number of cell
+    cell_num = len(rho)
+
+    # total enthalpy
+    htot = gamma/(gamma-1)*press/rho+0.5*vx**2
+
+    flux = np.zeros((3,cell_num+1))
+    diffusion = np.zeros((3,cell_num+1))
+
+    for j in range (0,cell_num-1):
+    
+        # Compute Roe averages
+        R=np.sqrt(rho[j+1]/rho[j])                   # R_{j+1/2}
+        rmoy=R*rho[j]                                # {hat rho}_{j+1/2}
+        umoy=(R*vx[j+1]+vx[j])/(R+1)                # {hat U}_{j+1/2}
+        hmoy=(R*htot[j+1]+htot[j])/(R+1);            # {hat H}_{j+1/2}
+        amoy=np.sqrt((gamma-1.0)*(hmoy-0.5*umoy*umoy))  # {hat a}_{j+1/2}
+        
+        # Auxiliary variables used to compute P_{j+1/2}^{-1}
+        alph1=(gamma-1)*umoy*umoy/(2*amoy*amoy)
+        alph2=(gamma-1)/(amoy*amoy)
+
+        # Compute matrix P^{-1}_{j+1/2}
+        Pinv = np.array([[0.5*(alph1+umoy/amoy), -0.5*(alph2*umoy+1/amoy),  alph2/2],
+                        [1-alph1,                alph2*umoy,                -alph2 ],
+                        [0.5*(alph1-umoy/amoy),  -0.5*(alph2*umoy-1/amoy),  alph2/2]])
+                
+        # Compute matrix P_{j+1/2}
+        P    = np.array([[ 1,              1,              1              ],
+                        [umoy-amoy,        umoy,           umoy+amoy      ],
+                        [hmoy-amoy*umoy,   0.5*umoy*umoy,  hmoy+amoy*umoy ]])
+        
+        # Compute matrix Lambda_{j+1/2}
+        lamb = np.array([[ abs(umoy-amoy),  0,              0                 ],
+                        [0,                 abs(umoy),      0                 ],
+                        [0,                 0,              abs(umoy+amoy)    ]])
+                      
+        # Compute Roe matrix |A_{j+1/2}|
+        A = P @ lamb @ Pinv
+
+        diffusion[:,j+1] = 0.5 * A @ (Q_cons[:,j+1]-Q_cons[:,j])
+
+        flux[0,j+1] = 0.5*(rho[j]*vx[j]               + rho[j+1]*vx[j+1])                         - diffusion[0,j+1]
+        flux[1,j+1] = 0.5*(rho[j]*vx[j]**2 + press[j] + rho[j+1]*vx[j+1]+press[j+1])              - diffusion[1,j+1]
+        flux[2,j+1] = 0.5*(vx[j]*(energy[j]+press[j]) + vx[j+1]*(energy[j+1]+press[j+1]))         - diffusion[2,j+1]
+
+
+    flux_mass   = flux[0,:]
+    flux_momx   = flux[1,:]
+    flux_energy = flux[2,:]
 
     return flux_mass, flux_momx, flux_energy
 
 def inviscid_d_flux_dx_calculator(flux , dx):
-     
-    d_flux_dx = ( flux - np.roll(flux,1) ) / dx
+    
+    d_flux_dx = np.zeros(len(flux)-1)
+
+    for indx in range(0,len(d_flux_dx)-1):
+
+        d_flux_dx[indx] = -(flux[indx+1] - flux[indx])/dx
 
     return d_flux_dx

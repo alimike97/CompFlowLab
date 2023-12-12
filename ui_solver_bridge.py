@@ -26,6 +26,7 @@ def driver(self):
     hyper_flag = solver_param['hyper']
     interval= 100
     work_dir= solver_param['working_dir']
+    flux_scheme='Rusanov'
 
     # get the initial condition
     rho , vx , p = solver_functions.ic_generator(solver_param)
@@ -83,13 +84,7 @@ def driver(self):
     for iter in range(solver_param['num_step']):
 
 
-        dflux_mass_dx , dflux_momx_dx , dflux_energy_dx = non_linear_terms.flux_calculator(mass,momx,energy,dx,gamma,vol,slope_limiter,sol_time,S_indx,hyper_flag)
-
-            
-        # apply flux terms
-        d_mass_dt   =  - dflux_mass_dx   * dx
-        d_momx_dt   =  - dflux_momx_dx   * dx
-        d_energy_dt =  - dflux_energy_dx * dx
+        d_mass_dt , d_momx_dt , d_energy_dt = non_linear_terms.flux_calculator(mass,momx,energy,dx,gamma,vol,slope_limiter,sol_time,S_indx,hyper_flag,flux_scheme)
 
         if rom_flag:
              
@@ -107,6 +102,14 @@ def driver(self):
             elif solver_param['time_scheme'] == 'Implicit - BD Euler':
 
                 mass , momx , energy  = time_integrator_functions.implicit_bd_euler(mass,momx,energy,dx,dt,gamma,vol,res_tol,slope_limiter)
+
+        mass[0:2]   = mass[3]
+        momx[0:2]    = momx[3]
+        energy[0:2]     = energy[3]
+
+        mass[-2:] = mass[-3]
+        momx[-2:]  = momx[-3]
+        energy[-2:]   = energy[-3]
 
         # convert cons to prim
         rho , vx , p = solver_functions.cons2prim_converter(mass , momx , energy , gamma , vol,sol_time)
@@ -135,7 +138,6 @@ def driver(self):
         plt.show(block=False)
         
         print('Iteration: ' + str(iter))
-            
         sol_time = sol_time + dt
         cons_results_save[:,:,iter] = cons_results
         prim_results_save[:,:,iter] = prim_results    

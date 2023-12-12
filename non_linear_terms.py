@@ -1,7 +1,8 @@
 import solver_functions
 import numpy as np
 
-def flux_calculator(mass,momx,energy,dx,gamma,vol,slope_limiter,sol_time,S_indx,hyper_flag):
+def flux_calculator(mass,momx,energy,dx,gamma,vol,slope_limiter,sol_time,S_indx,hyper_flag,flux_scheme):
+
 
     if hyper_flag == True:
     
@@ -29,8 +30,11 @@ def flux_calculator(mass,momx,energy,dx,gamma,vol,slope_limiter,sol_time,S_indx,
     p_face_left   , p_face_right   = solver_functions.extrapolate_center2face(p,d_p_dx,dx)
 
     # compute flux
-    flux_mass, flux_momx, flux_energy = solver_functions.flux_calculator(rho_face_left , rho_face_right , vx_face_left , vx_face_right , p_face_left , p_face_right , gamma)
-
+    if flux_scheme == 'Rusanov':
+        flux_mass, flux_momx, flux_energy = solver_functions.rusanov_flux_calculator(rho_face_left , rho_face_right , vx_face_left , vx_face_right , p_face_left , p_face_right , gamma)
+    elif flux_scheme == 'Roe':
+        flux_mass, flux_momx, flux_energy = solver_functions.roe_flux_calculator(mass , momx , energy , gamma , vol)
+   
     # inviscid flux vector terms
     dflux_mass_dx   = solver_functions.inviscid_d_flux_dx_calculator( flux_mass   , dx )
     dflux_momx_dx   = solver_functions.inviscid_d_flux_dx_calculator( flux_momx   , dx )
