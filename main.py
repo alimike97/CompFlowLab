@@ -98,6 +98,11 @@ class UI(customtkinter.CTk):
         self.rom_method = customtkinter.CTkOptionMenu(self.solver_mode_frame , values=self.rom_method_options , state='disabled' , variable=self.rom_method_entry_var)
         self.rom_method.grid(row=2,column=1,padx=5, pady=10)
 
+        self.adaptive_rom_method_entry_var = customtkinter.StringVar()
+        self.adaptive_rom_method_options = ['Single-Snapshot','Multi-Snapshot']
+        self.adaptive_rom_method = customtkinter.CTkOptionMenu(self.solver_mode_frame , values=self.adaptive_rom_method_options , state='disabled' , variable=self.adaptive_rom_method_entry_var)
+        self.adaptive_rom_method.grid(row=2,column=2,padx=2, pady=10)
+
         self.energy_capture_label = customtkinter.CTkLabel(self.solver_mode_frame , text='POD Energy Capture')
         self.energy_capture_label.grid(row=4,column=0,padx=5, pady=10)
         
@@ -120,6 +125,10 @@ class UI(customtkinter.CTk):
         self.training_window_entry_var = customtkinter.StringVar()
         self.training_window = customtkinter.CTkEntry(self.solver_mode_frame , textvariable=self.training_window_entry_var , state='disabled')
         self.training_window.grid(row=6,column=1,padx=5, pady=10)
+
+        self.unsampled_update_freq_entry_var = customtkinter.StringVar()
+        self.unsampled_update_freq = customtkinter.CTkEntry(self.solver_mode_frame , textvariable=self.unsampled_update_freq_entry_var , state='disabled')
+        self.unsampled_update_freq.grid(row=6,column=2,padx=2, pady=10)
 
         ######################   Time Descrtization   ######################
 
@@ -507,13 +516,15 @@ class UI(customtkinter.CTk):
             self.rom_mode_checkbox_check_var.set(0)
 
             self.rom_method.configure(state = 'normal')
+            self.adaptive_rom_method.configure(state = 'normal')
             self.energy_capture.configure(state = 'disabled')
             self.hyper_method_checkbox.configure(state = 'disabled')
             self.hyper_method_checkbox_check_var.set(1)
             self.hyper_method.configure(state = 'normal')
             self.FOM_file.configure(state = 'disabled')
             self.FOM_file_button.configure(state = 'disabled')
-            self.training_window.configure(state = 'normal')            
+            self.training_window.configure(state = 'normal')
+            self.unsampled_update_freq.configure(state = 'normal')              
 
     
     def working_dir_callback(self):

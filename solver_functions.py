@@ -12,16 +12,19 @@ def solver_parameters_collector(self):
     elif self.rom_mode_checkbox_check_var.get() == True:
 
         solver_param['solver_mode'] = 'ROM'
+        solver_param['pod_energy'] = float(self.energy_capture_entry_var.get())
 
     elif self.adaptive_rom_mode_checkbox_check_var.get() == True:
 
         solver_param['solver_mode'] = 'Adaptive ROM'
-
+        solver_param['adaptive_rom_method'] = self.adaptive_rom_method_entry_var.get()
+        solver_param['pod_energy'] = float(self.energy_capture_entry_var.get())
+        
     solver_param['rom_method'] = self.rom_method_entry_var.get()
-    solver_param['pod_energy'] = float(self.energy_capture_entry_var.get())
     solver_param['hyper']      = self.hyper_method_checkbox_check_var.get()
     solver_param['sampling_method'] = self.hyper_method_entry_var.get()
     solver_param['init_training_win'] = self.training_window_entry_var.get()
+    solver_param['unsampled_update_freq'] = int(self.unsampled_update_freq_entry_var.get())
 
 
     ### time discretization ###
@@ -390,6 +393,22 @@ def results_user2solver_converter(Q):
     Q_reshaped = np.ravel(Q)
 
     return Q_reshaped
+
+def solver_eliminate_ghost(solver_param,Q_full):
+
+    Q_full_user = results_solver2user_converter(solver_param['cell_number'],Q_full)
+    Q_int_user = Q_full_user[:,2:-2]
+    Q_int_solver = results_user2solver_converter(Q_int_user)
+
+    return Q_int_solver
+
+def solver_add_ghost(solver_param,Q_int):
+
+    Q_int_user  = results_solver2user_converter(solver_param['cell_number']-4,Q_int)
+    Q_int_full = np.column_stack((Q_int_user[:,0], Q_int_user[:,0], Q_int_user , Q_int_user[:,-1] , Q_int_user[:,-1]))
+    Q_full_solver= results_user2solver_converter(Q_int_full)
+
+    return Q_full_solver
 
 def residual_calculator(solver_param,rom_param,state):
     

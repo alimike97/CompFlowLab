@@ -74,8 +74,12 @@ def driver(self):
 
         elif solver_param['solver_mode'] == 'Adaptive ROM':
 
-            state, solver_param , rom_param = rom_functions.adaptive_rom_progress(solver_param,rom_param,state,iter)
-
+            if solver_param['adaptive_rom_method'] == 'Single-Snapshot':
+                state, solver_param , rom_param = rom_functions.single_adaptive_rom_progress(solver_param,rom_param,state,iter)
+            
+            elif solver_param['adaptive_rom_method'] == 'Multi-Snapshot':
+                state, solver_param , rom_param = rom_functions.multi_adaptive_rom_progress(solver_param,rom_param,state,iter)
+            
         # convert cons to prim
         state = solver_functions.cons2prim_converter(solver_param,state)
 
@@ -85,7 +89,15 @@ def driver(self):
         visualization_functions.in_progress_plot(fig,axs,iter,solver_param,rom_param,state,visual_param)
         
         plt.show(block=False)
-        
+
+        # if iter == 59:
+
+        #     breakpoint()
+        #     for i in range(0,59):
+        #         plt.plot(solver_param['x'],state['cons_results_save'][0,:,i],label=i)
+        #         plt.legend()
+        #         plt.show()
+        #         time.sleep(0.01)
         print('Iteration: ' + str(iter+1))
         state['cons_results_save'][:,:,iter] = solver_functions.results_solver2user_converter(solver_param['cell_number'],[state['Q_cons']])[:,2:-2]
         state['prim_results_save'][:,:,iter] = solver_functions.results_solver2user_converter(solver_param['cell_number'],[state['Q_prim']])[:,2:-2]  
