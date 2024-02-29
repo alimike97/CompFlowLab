@@ -396,6 +396,7 @@ def single_adaptive_rom_progress(solver_param,rom_param,state,iter):
             normalizor       = rom_param['normalizor']
             denormalizor     = rom_param['denormalizor']
 
+
             # Q tilda (ROM) before any update
             Q_tilda_old = state['Q_cons']
             Q_tilda_old_solver_int = solver_functions.solver_eliminate_ghost(solver_param,Q_tilda_old)
@@ -544,25 +545,30 @@ def multi_adaptive_rom_progress(solver_param,rom_param,state,iter):
             normalizor       = rom_param['normalizor']
             denormalizor     = rom_param['denormalizor']
 
+            # breakpoint()
+            # np.save(r'C:\Users\mohag\Desktop\initial_basis.npy',rom_param['basis'])
+            # np.save(r'C:\Users\mohag\Desktop\normalizor.npy',normalizor)
+            # np.save(r'C:\Users\mohag\Desktop\q_ref.npy',q_ref)
+
             # Q tilda (ROM) before any update
             Q_tilda_old = state['Q_cons']
-            # Q_tilda_old_solver_int = solver_functions.solver_eliminate_ghost(solver_param,Q_tilda_old)
+            Q_tilda_old_solver_int = solver_functions.solver_eliminate_ghost(solver_param,Q_tilda_old)
 
             # Find new Q tilda using old basis (prediction)
-            # state = solver_functions.residual_calculator(solver_param,rom_param,state)
-            # state , rom_param = red2full_state_calculator(solver_param,rom_param,state)
+            state = solver_functions.residual_calculator(solver_param,rom_param,state)
+            state , rom_param = red2full_state_calculator(solver_param,rom_param,state)
             # Q_bar_residual_unsampled= state['d_flux_dx']
             
 
             # new Q_r
-            # Q_red_new = rom_param['q_red0']
+            Q_red_new = rom_param['q_red0']
 
-            # Q_tilda_predict = state['Q_cons']
-            # Q_tilda_predict_solver_int = solver_functions.solver_eliminate_ghost(solver_param,Q_tilda_predict)
+            Q_tilda_predict = state['Q_cons']
+            Q_tilda_predict_solver_int = solver_functions.solver_eliminate_ghost(solver_param,Q_tilda_predict)
 
             # Find FOM at sampled points
 
-            # state['Q_cons'] = Q_tilda_old
+            state['Q_cons'] = Q_tilda_old
             state = solver_functions.residual_calculator(solver_param,rom_param,state)
             # solver_param['dt'] = 10 * solver_param['dt']
             state = time_integrator_functions.advance_time(solver_param,state)
@@ -613,132 +619,53 @@ def multi_adaptive_rom_progress(solver_param,rom_param,state,iter):
             # Create a matrix of snapshots with results from past and q bar
             basis_num_row,basis_num_col = np.shape(rom_param['basis'])
             
-            # window_size = len(F[0,:])
             window_size = 10
 
-            # snapshot_to_taken = np.arange(iter-window_size,iter-1)
-
-            # if 1 not in snapshot_to_taken:
-
-            #     snapshot_to_taken = np.arange(iter-window_size+1,iter-1)
-            #     snapshot_to_taken = np.append(1,snapshot_to_taken)
-            breakpoint()
             snapshot_to_taken = np.arange(iter-window_size+1,iter)
 
-            # snapshot_ref = int(solver_param['init_training_win'])-1
-
-            # if snapshot_ref in snapshot_to_taken:
-                 
-            #     snapshot_to_taken = np.arange(iter-window_size-1,iter-1)
-            #     snapshot_to_taken = snapshot_to_taken[snapshot_to_taken != snapshot_ref]
-
-            # if iter == int(solver_param['init_training_win'])+1:
-                 
-            #     snapshot_to_taken = np.arange(iter-window_size-1,iter-1)
-            #     snapshot_to_taken = snapshot_to_taken[snapshot_to_taken != iter-2]
-            # else:
-            #     snapshot_to_taken = np.arange(iter-window_size,iter-1)
-
-            Qr = np.zeros((basis_num_col,window_size))
             F  = np.zeros((basis_num_row,window_size))
-            # C = np.zeros((basis_num_col,window_size))
 
-            # old_basis_pinv = np.linalg.pinv(rom_param['basis'])
-
-            solver_param['hyper'] = False
-
-            # breakpoint()
-
-            for indx in range(window_size):
+            for indx in range(window_size-1):
                 
                 # past snapshots
-                if indx != window_size-1:
-                     
-                    snapshot_temp_int = solver_functions.results_user2solver_converter(state['cons_results_save'][:,:,snapshot_to_taken[indx]])
-                    # snapshot_temp_full= solver_functions.solver_add_ghost(solver_param,snapshot_temp_int)
-                    # state['Q_cons']   = snapshot_temp_full
-                    # state             = solver_functions.residual_calculator(solver_param,rom_param,state)
-                    # residual_full     = state['d_flux_dx']
-                    # residual_int      = solver_functions.solver_eliminate_ghost(solver_param,residual_full)
-                    # Qr[:,indx]          = old_basis_pinv @ ((snapshot_temp_int-q_ref)*normalizor)
-                    # F [:,indx]          = (snapshot_temp_int-q_ref)*normalizor
-                    F [:,indx]          = snapshot_temp_int
+                snapshot_temp_int = solver_functions.results_user2solver_converter(state['cons_results_save'][:,:,snapshot_to_taken[indx]])
+                F [:,indx]          = (snapshot_temp_int-q_ref)*normalizor
 
+            F [:,-1]          = (Q_bar_new_solver_int-q_ref)*normalizor
 
-                # future estimation
-                else:
-
-                    snapshot_temp_int = Q_bar_new_solver_int
-                    # snapshot_temp_full= solver_functions.solver_add_ghost(solver_param,snapshot_temp_int)
-                    # state['Q_cons']   = snapshot_temp_full
-                    # state             = solver_functions.residual_calculator(solver_param,rom_param,state)
-                    # residual_full     = state['d_flux_dx']
-                    # residual_int      = solver_functions.solver_eliminate_ghost(solver_param,residual_full)
-                    # Qr[:,indx]          = old_basis_pinv @ ((snapshot_temp_int-q_ref)*normalizor)
-                    # F [:,indx]          = (snapshot_temp_int-q_ref)*normalizor
-                    F [:,indx]          = snapshot_temp_int
-
-                # compute the coefficient matrix
-                # C[:,indx] = (np.linalg.pinv(rom_param['basis'])@F[:,indx].reshape(-1,1)).reshape(1,-1)
-
-            # solver_param['hyper'] = True
-
-            # C, _, _, _ = np.linalg.lstsq(rom_param['basis'], F, rcond=None)
+            C = np.linalg.pinv(rom_param['basis']) @ F 
                     
-            # breakpoint()
+            R = (rom_param['basis'] @ C) - F
 
-            # R = (rom_param['basis'] @ np.linalg.pinv(rom_param['basis']) @ F) - F
+            _ , Sv , SrT = np.linalg.svd(R,full_matrices=False)
 
-            # Sl , Sv , SrT = np.linalg.svd(R,full_matrices=False)
+            Sr = SrT
 
-            # Sr = SrT
+            CT_inv = np.linalg.pinv(C.T)
 
-            # CT_inv = np.linalg.pinv(C.T)
+            r = window_size
 
-            # r = window_size
+            r = min(r, len(Sv))
 
-            # r = min(r, len(Sv))
+            for indx in np.arange(0,r):
 
-            # for indx in range(r):
+                alpha = - R @ Sr[:,indx].reshape(-1,1)
+                beta  = CT_inv @ Sr[:,indx].reshape(-1,1)
+                del_basis = alpha @ beta.T
 
-            #     alpha = - R @ Sr[:,indx].reshape(-1,1)
-            #     beta  = CT_inv @ Sr[:,indx].reshape(-1,1)
-            #     del_basis = alpha @ beta.T
+                rom_param['basis'] = rom_param['basis'] + del_basis
 
-            #     rom_param['basis'] = rom_param['basis'] + del_basis
-
-            # rom_param['basis'] = sc.linalg.orth(rom_param['basis'])
-
-            # rom_param['basis'] = F @ np.linalg.pinv(Qr)
-                    
-            # rom_param['basis'],_,_=np.linalg.svd(F,full_matrices=False)
-
-            # rom_param['basis'] = rom_param['basis'][:,0:basis_num_col]
-
-            # rom_param['basis'] = sc.linalg.orth(rom_param['basis'])
-            # rom_param['basis'],_ = np.linalg.qr(rom_param['basis'])
-            # breakpoint()
-            # rom_param['basis'] = Vt.T
-
-            # rom_param['basis'] = np.linalg.qr(rom_param['basis'])[0]
-                    
-            C = rom_param['basis'].T @ F
-
-            basis_new = F @ np.linalg.pinv(C)
-            # basis_new_prime,_,_ = np.linalg.svd(basis_new,full_matrices=True)
-            rom_param['basis'] = basis_new
-            # breakpoint()
+            rom_param['basis'] , _ = np.linalg.qr(rom_param['basis'])
             
             # Find Q tilda (ROM) with new basis(correction)
-            # Q_tilda_correct_solver_int= q_ref + (denormalizor * (rom_param['basis'] @ Q_red_new)) 
-            # Q_tilda_correct_solver_full= solver_functions.solver_add_ghost(solver_param,Q_tilda_correct_solver_int)
+            Q_tilda_correct_solver_int= q_ref + (denormalizor * (rom_param['basis'] @ rom_param['basis'].T @ F [:,-1] ))
+            Q_tilda_correct_solver_full= solver_functions.solver_add_ghost(solver_param,Q_tilda_correct_solver_int)
 
-            state['Q_cons'] = Q_tilda_old
-            state = solver_functions.residual_calculator(solver_param,rom_param,state)
-            state , rom_param = red2full_state_calculator(solver_param,rom_param,state)
+            # state['Q_cons'] = Q_tilda_old
+            # state = solver_functions.residual_calculator(solver_param,rom_param,state)
+            # state , rom_param = red2full_state_calculator(solver_param,rom_param,state)
 
-            # state['Q_cons'] = Q_tilda_correct_solver_full
-
+            state['Q_cons'] = Q_tilda_correct_solver_full
             
             rom_param = sample_point_finder(solver_param,rom_param)
 

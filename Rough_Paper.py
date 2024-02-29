@@ -1,52 +1,83 @@
-
 import numpy as np
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 
-data_cons = np.load(r"C:\GIT_Fork\ROMify\examples\standing_flame\results\FOM_cons.npy")
-data_prim = np.load(r"C:\GIT_Fork\ROMify\examples\standing_flame\results\FOM_prim.npy")
-# IC_prim   = np.load(r"C:\GIT_Fork\ROMify\examples\standing_flame\rom_basis\prim_IC.npy")
-IC_cons   = data_cons[:,:,3000]
-IC_prim   = data_prim[:,:,3000]
+def adeim(initial_basis, F):
 
-data_cons = data_cons[:,:,3000:5000]
-dim       = np.shape(data_cons)
+    C = np.linalg.pinv(initial_basis) @ F 
+            
+    R = (initial_basis @ C) - F
 
-centered_data =  data_cons - IC_cons[:,:,np.newaxis]
+    _ , Sv , SrT = np.linalg.svd(R,full_matrices=False)
 
-norm_factor = np.linalg.norm(centered_data, axis=2)
+    Sr = SrT
 
-cen_norm_data = centered_data / norm_factor[:,:,np.newaxis]
+    CT_inv = np.linalg.pinv(C.T)
 
-tall_thin_data = cen_norm_data.reshape(dim[0]*dim[1],dim[2])
+    r = window_size
 
-V, S, UT = np.linalg.svd(tall_thin_data , full_matrices=False)
+    r = min(r, len(Sv))
 
-norm_factor = norm_factor.flatten()
+    for indx in np.arange(0,r):
 
-P_shape = norm_factor.shape[0]
+        alpha = - R @ Sr[:,indx].reshape(-1,1)
+        beta  = CT_inv @ Sr[:,indx].reshape(-1,1)
+        del_basis = alpha @ beta.T
 
-zero_matrix = np.zeros((P_shape , P_shape))
+        initial_basis = initial_basis + del_basis
 
-np.fill_diagonal(zero_matrix,norm_factor)
+    new_basis = initial_basis
 
-# np.save(r"C:\GIT_Fork\ROMify\examples\standing_flame\rom_basis\cons_basis.npy",V)
-# np.save(r"C:\GIT_Fork\ROMify\examples\standing_flame\rom_basis\cons_norm_factor.npy",zero_matrix)
-# np.save(r"C:\GIT_Fork\ROMify\examples\standing_flame\rom_basis\cons_IC.npy",IC_cons)
-# np.save(r"C:\GIT_Fork\ROMify\examples\standing_flame\rom_basis\prim_IC.npy",IC_prim)
+    # new_basis , _ = np.linalg.qr(new_basis)
 
-fig , ax = plt.subplots(2,2)
+    return new_basis
 
-ax[0,0].plot(IC_cons[0,:])
-ax[0,1].plot(IC_cons[1,:])
-ax[1,0].plot(IC_cons[2,:])
+initial_basis = np.load(r"C:\Users\mohag\Desktop\adeim_check\initial_basis.npy")
+q_ref = np.load(r"C:\Users\mohag\Desktop\adeim_check\q_ref.npy")
+normalizor = np.load(r"C:\Users\mohag\Desktop\adeim_check\normalizor.npy")
+
+FOM_results = np.load(r"C:\Users\mohag\Desktop\adeim_check\FOM 3000 snapshots Explicit - FD Euler cons.npy")
+
+num_cell = 1500
+num_mode = 10
+window_size = 10
+iter = 11
+
+for iter in np.arange(11,3000):
+
+    future_snapshot = FOM_results[:, :, iter].ravel()
+
+    F = np.zeros((num_cell, num_mode))
+
+    snapshots = np.arange(iter-window_size+1, iter)
+
+    for indx in np.arange(0, window_size-1):
+
+        F[:, indx] = normalizor * (FOM_results[:, :, snapshots[indx]].ravel() - q_ref)
+
+    F[:, -1] = normalizor * (future_snapshot - q_ref)
+
+    new_basis = adeim(initial_basis, F)
+
+    # new_basis , _ ,_ = np.linalg.svd(F)
+
+    FOM_check = new_basis @ new_basis.T @ F[:, -1]
+
+    print(iter)
+
+    plt.clf()
+    plt.plot(F[:, -1],linewidth=3 , label='FOM')
+    plt.plot(FOM_check,linestyle='--' , label = 'Projected FOM')
+    plt.title('iteration: ' + str(iter))
+    plt.ylabel('Q cons')
+    plt.legend()
+    # if iter % 50 == 0 :
+    plt.pause(0.001)
+
+    initial_basis = new_basis
+
 
 plt.show()
-
-energy = np.zeros(np.shape(S))
-
-for indx in range(1,len(S)):
     
-    energy[indx] = (np.sum(S[0:indx])**2)/(np.sum(S)**2) * 100
 
-num_mode = np.where(energy >= 99.999)[0][0]
-print(num_mode)
+
+
