@@ -533,22 +533,16 @@ def multi_adaptive_rom_progress(solver_param,rom_param,state,iter):
 
             rom_param = precomputer(solver_param,state)
             rom_param = sample_point_finder(solver_param,rom_param)
-            solver_param['hyper'] = False
-            # state['Q_bar'] = state['Q_cons']
+            solver_param['hyper'] = True
+            state['Q_bar'] = state['Q_cons']
 
 
     else:   
             
             # read basics parameters
-            # breakpoint()
             q_ref            = rom_param['q_ref']
             normalizor       = rom_param['normalizor']
             denormalizor     = rom_param['denormalizor']
-
-            # breakpoint()
-            # np.save(r'C:\Users\mohag\Desktop\initial_basis.npy',rom_param['basis'])
-            # np.save(r'C:\Users\mohag\Desktop\normalizor.npy',normalizor)
-            # np.save(r'C:\Users\mohag\Desktop\q_ref.npy',q_ref)
 
             # Q tilda (ROM) before any update
             Q_tilda_old = state['Q_cons']
@@ -559,7 +553,6 @@ def multi_adaptive_rom_progress(solver_param,rom_param,state,iter):
             state , rom_param = red2full_state_calculator(solver_param,rom_param,state)
             # Q_bar_residual_unsampled= state['d_flux_dx']
             
-
             # new Q_r
             Q_red_new = rom_param['q_red0']
 
@@ -567,105 +560,165 @@ def multi_adaptive_rom_progress(solver_param,rom_param,state,iter):
             Q_tilda_predict_solver_int = solver_functions.solver_eliminate_ghost(solver_param,Q_tilda_predict)
 
             # Find FOM at sampled points
-
-            state['Q_cons'] = Q_tilda_old
-            state = solver_functions.residual_calculator(solver_param,rom_param,state)
-            # solver_param['dt'] = 10 * solver_param['dt']
-            state = time_integrator_functions.advance_time(solver_param,state)
-            # solver_param['dt'] = (1/10) * solver_param['dt']
-            Q_bar_new_solver_full = state['Q_cons']
-            Q_bar_new_solver_int  = solver_functions.solver_eliminate_ghost(solver_param,Q_bar_new_solver_full)
-
-            # sampling_adapt_freq = solver_param['unsampled_update_freq']
-
-            # if sampling_adapt_freq != 0 and solver_param['iter'] % sampling_adapt_freq == 0:
-                
-            #     Q_bar_star_old = state['Q_bar']
-            #     solver_param['hyper'] = False
-            #     solver_param['dt'] = sampling_adapt_freq * solver_param['dt']
-
-            #     state['Q_cons'] = Q_bar_star_old
-
-            #     state = solver_functions.residual_calculator(solver_param,rom_param,state)
-            #     Q_bar_residual_sampled = state['d_flux_dx'][rom_param['S_indx_solver']]
-            #     state = time_integrator_functions.advance_time(solver_param,state)
-
-            #     Q_bar_star_new = state['Q_cons']
-            #     Q_bar_star_new_solver_int = solver_functions.solver_eliminate_ghost(solver_param,Q_bar_star_new)
-
-            #     state['Q_bar'] = Q_bar_star_new
-
-            #     Q_bar_new_sampling = Q_bar_star_new_solver_int[rom_param['S_indx_solver']]
-            #     Q_bar_new_solver_int = Q_bar_star_new_solver_int
-            #     solver_param['hyper'] = True
-            #     solver_param['dt'] = solver_param['dt'] / sampling_adapt_freq
-
-                                
-            # else:
-                 
-            #     state              = solver_functions.residual_calculator(solver_param,rom_param,state)
-            #     Q_bar_residual_sampled     = state['d_flux_dx']
-            #     state['Q_cons']    = Q_tilda_old_solver_int[rom_param['S_indx_solver']]
-            #     state              = time_integrator_functions.advance_time(solver_param,state)
-            #     Q_bar_new_sampling = state['Q_cons']
-
-            #     # Estimate FOM at unsampled points using old basis
-            #     Q_bar_new_solver_int                             = q_ref + (denormalizor * (rom_param['basis'] @ Q_red_new))
-
-            #     # Combine FOM sampled points with FOM Estimation at umsampled
-            #     Q_bar_new_solver_int[rom_param['S_indx_solver']] = Q_bar_new_sampling 
             # breakpoint()
+            sampling_adapt_freq = solver_param['unsampled_update_freq']
 
-            # Create a matrix of snapshots with results from past and q bar
-            basis_num_row,basis_num_col = np.shape(rom_param['basis'])
-            
-            window_size = 10
+            if sampling_adapt_freq != 0 and solver_param['iter'] % sampling_adapt_freq == 0:
+                # breakpoint()
+                Q_bar_star_old = state['Q_bar']
+                solver_param['hyper'] = False
+                solver_param['dt'] = sampling_adapt_freq * solver_param['dt']
 
-            snapshot_to_taken = np.arange(iter-window_size+1,iter)
+                state['Q_cons'] = Q_bar_star_old
 
-            F  = np.zeros((basis_num_row,window_size))
+                state = solver_functions.residual_calculator(solver_param,rom_param,state)
+                Q_bar_residual_sampled = state['d_flux_dx'][rom_param['S_indx_solver']]
+                state = time_integrator_functions.advance_time(solver_param,state)
 
-            for indx in range(window_size-1):
+                Q_bar_star_new = state['Q_cons']
+                Q_bar_star_new_solver_int = solver_functions.solver_eliminate_ghost(solver_param,Q_bar_star_new)
+
+                state['Q_bar'] = Q_bar_star_new
+
+                Q_bar_new_sampling = Q_bar_star_new_solver_int[rom_param['S_indx_solver']]
+                Q_bar_new_solver_int = Q_bar_star_new_solver_int
+                solver_param['hyper'] = True
+                solver_param['dt'] = solver_param['dt'] / sampling_adapt_freq
+   
+            else:
+                # breakpoint()
+                state['Q_cons'] = Q_tilda_old
+                state              = solver_functions.residual_calculator(solver_param,rom_param,state)
+                Q_bar_residual_sampled     = state['d_flux_dx']
+                state['Q_cons']    = Q_tilda_old_solver_int[rom_param['S_indx_solver']]
+                state              = time_integrator_functions.advance_time(solver_param,state)
+                Q_bar_new_sampling = state['Q_cons']
+
+                # Estimate FOM at unsampled points using old basis
+                Q_bar_new_solver_int                             = q_ref + (denormalizor * (rom_param['basis'] @ Q_red_new))
+
+                # Combine FOM sampled points with FOM Estimation at umsampled
+                Q_bar_new_solver_int[rom_param['S_indx_solver']] = Q_bar_new_sampling
+
+
+
+            if sampling_adapt_freq != 0 and solver_param['iter'] % sampling_adapt_freq == 0:
+                # breakpoint()
+                # unsampled_index = [i for i in np.arange(0,1500) if i not in rom_param['S_indx_solver']]
                 
-                # past snapshots
-                snapshot_temp_int = solver_functions.results_user2solver_converter(state['cons_results_save'][:,:,snapshot_to_taken[indx]])
-                F [:,indx]          = (snapshot_temp_int-q_ref)*normalizor
+                # # Create a matrix of snapshots with results from past and q bar
+                # basis_num_row,basis_num_col = np.shape(rom_param['basis'])
+                
+                # window_size = 10
 
-            F [:,-1]          = (Q_bar_new_solver_int-q_ref)*normalizor
+                # snapshot_to_taken = np.arange(iter-window_size+1,iter)
 
-            C = np.linalg.pinv(rom_param['basis']) @ F 
+                # F  = np.zeros((basis_num_row,window_size))
+
+                # for indx in range(window_size-1):
                     
-            R = (rom_param['basis'] @ C) - F
+                #     # past snapshots
+                #     snapshot_temp_int = solver_functions.results_user2solver_converter(state['cons_results_save'][:,:,snapshot_to_taken[indx]])
+                #     F [:,indx]          = (snapshot_temp_int-q_ref)*normalizor
 
-            _ , Sv , SrT = np.linalg.svd(R,full_matrices=False)
+                # # future snapshot
+                # F [:,-1]          = (Q_bar_new_solver_int-q_ref)*normalizor
 
-            Sr = SrT
+                # # use a window of snapshots to update basis
+                # C = np.linalg.pinv(rom_param['basis'][unsampled_index,:]) @ F[unsampled_index,:]                 
+                # R = (rom_param['basis'][unsampled_index,:]    @ C) - F[unsampled_index,:]   
+                # _ , Sv , SrT = np.linalg.svd(R,full_matrices=False)
+                # Sr = SrT
+                # CT_inv = np.linalg.pinv(C.T)
+                # r = window_size
+                # r = min(r, len(Sv))
 
-            CT_inv = np.linalg.pinv(C.T)
+                # for indx in np.arange(0,r):
 
-            r = window_size
+                #     alpha = - R @ Sr[:,indx].reshape(-1,1)
+                #     beta  = CT_inv @ Sr[:,indx].reshape(-1,1)
+                #     del_basis = alpha @ beta.T
 
-            r = min(r, len(Sv))
+                #     rom_param['basis'][unsampled_index,:]    = rom_param['basis'][unsampled_index,:]    + del_basis
 
-            for indx in np.arange(0,r):
+                # # orthogonalize the basis
+                # rom_param['basis'] , _ = np.linalg.qr(rom_param['basis'])
 
-                alpha = - R @ Sr[:,indx].reshape(-1,1)
-                beta  = CT_inv @ Sr[:,indx].reshape(-1,1)
-                del_basis = alpha @ beta.T
+                # Q_tilda_correct_solver_int= q_ref + (denormalizor * (rom_param['basis'] @ rom_param['basis'].T @ F [:,-1] ))
+                # Q_tilda_correct_solver_full= solver_functions.solver_add_ghost(solver_param,Q_tilda_correct_solver_int)
 
-                rom_param['basis'] = rom_param['basis'] + del_basis
+                # state['Q_cons'] = Q_tilda_correct_solver_full
 
-            rom_param['basis'] , _ = np.linalg.qr(rom_param['basis'])
+                state['Q_cons'] = Q_bar_star_new
+
+
+            else:
+
+                # Create a matrix of snapshots with results from past and q bar
+                basis_num_row,basis_num_col = np.shape(rom_param['basis'])
+                
+                window_size = 10
+
+                snapshot_to_taken = np.arange(iter-window_size+1,iter)
+
+                F  = np.zeros((basis_num_row,window_size))
+
+                for indx in range(window_size-1):
+                    
+                    # past snapshots
+                    snapshot_temp_int = solver_functions.results_user2solver_converter(state['cons_results_save'][:,:,snapshot_to_taken[indx]])
+                    F [:,indx]          = (snapshot_temp_int-q_ref)*normalizor
+
+                # future snapshot
+                F [:,-1]          = (Q_bar_new_solver_int-q_ref)*normalizor
+
+                # use a window of snapshots to update basis
+                C = np.linalg.pinv(rom_param['basis'][rom_param['S_indx_solver'],:]) @ F[rom_param['S_indx_solver'],:]                   
+                R = (rom_param['basis'][rom_param['S_indx_solver'],:] @ C) - F[rom_param['S_indx_solver'],:]
+                _ , Sv , SrT = np.linalg.svd(R,full_matrices=False)
+                Sr = SrT
+                CT_inv = np.linalg.pinv(C.T)
+                r = window_size
+                r = min(r, len(Sv))
+
+                for indx in np.arange(0,r):
+
+                    alpha = - R @ Sr[:,indx].reshape(-1,1)
+                    beta  = CT_inv @ Sr[:,indx].reshape(-1,1)
+                    del_basis = alpha @ beta.T
+
+                    rom_param['basis'][rom_param['S_indx_solver'],:] = rom_param['basis'][rom_param['S_indx_solver'],:] + del_basis
+
+                # orthogonalize the basis
+                rom_param['basis'] , _ = np.linalg.qr(rom_param['basis'])
+
+                # # use a window of snapshots to update basis
+                # C = np.linalg.pinv(rom_param['basis']) @ F                  
+                # R = (rom_param['basis'] @ C) - F
+                # _ , Sv , SrT = np.linalg.svd(R,full_matrices=False)
+                # Sr = SrT
+                # CT_inv = np.linalg.pinv(C.T)
+                # r = window_size
+                # r = min(r, len(Sv))
+
+                # for indx in np.arange(0,r):
+
+                #     alpha = - R @ Sr[:,indx].reshape(-1,1)
+                #     beta  = CT_inv @ Sr[:,indx].reshape(-1,1)
+                #     del_basis = alpha @ beta.T
+
+                #     rom_param['basis'] = rom_param['basis'] + del_basis
+
+                # # orthogonalize the basis
+                # rom_param['basis'] , _ = np.linalg.qr(rom_param['basis'])
             
-            # Find Q tilda (ROM) with new basis(correction)
-            Q_tilda_correct_solver_int= q_ref + (denormalizor * (rom_param['basis'] @ rom_param['basis'].T @ F [:,-1] ))
-            Q_tilda_correct_solver_full= solver_functions.solver_add_ghost(solver_param,Q_tilda_correct_solver_int)
+                # Find Q tilda (ROM) with new basis(correction)
+                Q_tilda_correct_solver_int= q_ref + (denormalizor * (rom_param['basis'] @ rom_param['basis'].T @ F [:,-1] ))
+                Q_tilda_correct_solver_full= solver_functions.solver_add_ghost(solver_param,Q_tilda_correct_solver_int)
 
-            # state['Q_cons'] = Q_tilda_old
-            # state = solver_functions.residual_calculator(solver_param,rom_param,state)
-            # state , rom_param = red2full_state_calculator(solver_param,rom_param,state)
+                state['Q_cons'] = Q_tilda_correct_solver_full
 
-            state['Q_cons'] = Q_tilda_correct_solver_full
+            
             
             rom_param = sample_point_finder(solver_param,rom_param)
 

@@ -27,7 +27,7 @@ def adeim(initial_basis, F):
 
     new_basis = initial_basis
 
-    # new_basis , _ = np.linalg.qr(new_basis)
+    new_basis , _ = np.linalg.qr(new_basis)
 
     return new_basis
 
