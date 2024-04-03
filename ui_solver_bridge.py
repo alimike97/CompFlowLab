@@ -79,6 +79,12 @@ def driver(self):
             
             elif solver_param['adaptive_rom_method'] == 'Multi-Snapshot':
                 state, solver_param , rom_param = rom_functions.multi_adaptive_rom_progress(solver_param,rom_param,state,iter)
+
+            elif solver_param['adaptive_rom_method'] == 'Direct Adapt':
+                state, solver_param , rom_param = rom_functions.direct_adaptive_rom_progress(solver_param,rom_param,state,iter)
+
+            elif solver_param['adaptive_rom_method'] == 'Initiative Adapt':
+                state, solver_param , rom_param = rom_functions.initiative_adaptive_rom_progress(solver_param,rom_param,state,iter)
             
         # convert cons to prim
         state = solver_functions.cons2prim_converter(solver_param,state)

@@ -99,7 +99,7 @@ class UI(customtkinter.CTk):
         self.rom_method.grid(row=2,column=1,padx=5, pady=10)
 
         self.adaptive_rom_method_entry_var = customtkinter.StringVar()
-        self.adaptive_rom_method_options = ['Single-Snapshot','Multi-Snapshot']
+        self.adaptive_rom_method_options = ['Single-Snapshot','Multi-Snapshot','Direct Adapt','Initiative Adapt']
         self.adaptive_rom_method = customtkinter.CTkOptionMenu(self.solver_mode_frame , values=self.adaptive_rom_method_options , state='disabled' , variable=self.adaptive_rom_method_entry_var)
         self.adaptive_rom_method.grid(row=2,column=2,padx=2, pady=10)
 
