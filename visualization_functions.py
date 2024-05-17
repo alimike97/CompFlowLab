@@ -168,7 +168,7 @@ def in_progress_plot(fig,axs,iter,solver_param,rom_param,state,visual_param):
     axs[1,0].set_ylabel(solver_param['variable3'])
     axs[1,1].set_ylabel(solver_param['variable4'])
 
-    if solver_param['solver_mode'] == 'ROM' or (iter > int(solver_param['init_training_win']) and solver_param['solver_mode'] == 'Adaptive ROM'):
+    if solver_param['solver_mode'] == 'ROM' or (solver_param['plot_fom_flag'] == True and iter > int(solver_param['init_training_win'])):
 
         training_data_prim = rom_param['training_data_prim']
 

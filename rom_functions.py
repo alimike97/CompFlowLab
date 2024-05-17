@@ -27,10 +27,12 @@ def precomputer(solver_param,state):
         first_snapshot     = training_data_cons[:,:,-1]
         # first_snapshot     = np.mean(training_data_cons,axis=2)
 
-        training_data_path_cons = solver_param['FOM_result_dir']
-        training_data_path_prim = training_data_path_cons.replace(' cons.npy',' prim.npy')
+        if solver_param['plot_fom_flag'] == True:
 
-        training_data_prim      = np.load(training_data_path_prim)
+            training_data_path_cons = solver_param['FOM_result_dir']
+            training_data_path_prim = training_data_path_cons.replace(' cons.npy',' prim.npy')
+
+            training_data_prim      = np.load(training_data_path_prim)
 
 
     POD_energy_limit   = 100-solver_param['pod_energy']
@@ -394,6 +396,7 @@ def adaptive_rom_progress(solver_param,rom_param,state,iter):
 
     else:   
             
+            # breakpoint()
             # read basics parameters
             q_ref            = rom_param['q_ref']
             normalizor       = rom_param['normalizor']
@@ -467,10 +470,12 @@ def adaptive_rom_progress(solver_param,rom_param,state,iter):
                 Q_bar_new_sampling = state['Q_cons']
 
                 # Estimate FOM at unsampled points using old basis
-                Q_bar_new_solver_int                             = q_ref + (denormalizor * (rom_param['basis'] @ Q_red_new))
-
+                # Q_bar_new_solver_int_old                             = q_ref + (denormalizor * (rom_param['basis'] @ Q_red_new))
+                decen_norm_Q_bar_new_sampling           = normalizor[rom_param['S_indx_solver']]*(Q_bar_new_sampling-q_ref[rom_param['S_indx_solver']])
+                Q_red_new                               = np.linalg.pinv(rom_param['basis'][rom_param['S_indx_solver']]) @ decen_norm_Q_bar_new_sampling
+                Q_bar_new_solver_int                    = q_ref + (denormalizor * (rom_param['basis'] @ Q_red_new))
                 # Combine FOM sampled points with FOM Estimation at umsampled
-                Q_bar_new_solver_int[rom_param['S_indx_solver']] = Q_bar_new_sampling
+                # Q_bar_new_solver_int[rom_param['S_indx_solver']] = Q_bar_new_sampling
 
                 rom_param , F = adapt_basis(solver_param,state,rom_param,Q_bar_new_solver_int,iter,Q_tilda_predict_solver_int,Q_red_new)
             
@@ -499,7 +504,7 @@ def adaptive_rom_progress(solver_param,rom_param,state,iter):
     return state, solver_param , rom_param
 
 def adapt_basis(solver_param,state,rom_param,Q_bar_new_solver_int,iter,Q_tilda_predict_solver_int=0,Q_red_new=0):
-    # breakpoint()
+
     q_ref = rom_param['q_ref']
     normalizor = rom_param['normalizor']
 

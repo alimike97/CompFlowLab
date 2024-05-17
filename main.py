@@ -24,7 +24,7 @@ class UI(customtkinter.CTk):
         customtkinter.set_default_color_theme("dark-blue")  # Themes: blue (default), dark-blue, green
 
         self.window_width = 1280
-        self.window_length= 720
+        self.window_length= 800
 
         self.screen_width  = self.winfo_screenwidth()
         self.screen_height = self.winfo_screenheight()
@@ -362,7 +362,7 @@ class UI(customtkinter.CTk):
         ######################  Visualization  ######################
 
         self.visual_frame = customtkinter.CTkFrame(self.set_up_frame,corner_radius=20)
-        self.visual_frame.grid(row=0,column=5,padx=10,pady=10 , sticky = 'new')
+        self.visual_frame.grid(row=0,column=6,padx=10,pady=10 , sticky = 'new')
 
         self.visual_label = customtkinter.CTkLabel(self.visual_frame , text='Visualization')
         self.visual_label.grid(row=0,column=0,columnspan=2)
@@ -402,7 +402,11 @@ class UI(customtkinter.CTk):
 
         self.visual_update_interval_entry_var=customtkinter.StringVar()
         self.visual_update_interval = customtkinter.CTkEntry(self.visual_frame , textvariable=self.visual_update_interval_entry_var)
-        self.visual_update_interval.grid(row=5,column=1,padx=15, pady=10)                  
+        self.visual_update_interval.grid(row=5,column=1,padx=15, pady=10)
+
+        self.fom_plot_check_var = customtkinter.BooleanVar()
+        self.fom_plot = customtkinter.CTkCheckBox(self.visual_frame , text='Plot FOM Data',variable=self.fom_plot_check_var)
+        self.fom_plot.grid(row=6,column=1, pady=10,sticky='ew')              
 
         # ######################  IC  ######################
 
@@ -482,6 +486,7 @@ class UI(customtkinter.CTk):
             self.adaptive_rom_mode_checkbox_check_var.set(0)
 
             self.rom_method.configure(state = 'disabled')
+            self.adaptive_rom_method.configure(state = 'disabled')
             self.energy_capture.configure(state = 'disabled')
             self.hyper_method_checkbox.configure(state = 'disabled')
             self.hyper_method_checkbox_check_var.set(0)
@@ -490,6 +495,7 @@ class UI(customtkinter.CTk):
             self.FOM_file_button.configure(state = 'disabled')
             self.training_window.delete(0, customtkinter.END)
             self.training_window.configure(state = 'disabled')
+            self.unsampled_update_freq.configure(state = 'disabled')
 
             
 
@@ -501,12 +507,14 @@ class UI(customtkinter.CTk):
 
             self.rom_method.configure(state = 'normal')
             self.energy_capture.configure(state = 'normal')
+            self.adaptive_rom_method.configure(state = 'disabled')
             self.hyper_method_checkbox.configure(state = 'normal')
             self.hyper_method.configure(state = 'normal')
             self.FOM_file.configure(state = 'normal')
             self.FOM_file_button.configure(state = 'normal')
             self.training_window.delete(0, customtkinter.END)
             self.training_window.configure(state = 'disabled')
+            self.unsampled_update_freq.configure(state = 'disabled')
             
 
         if option == 'Adaptive ROM':

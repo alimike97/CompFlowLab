@@ -19,12 +19,12 @@ def solver_parameters_collector(self):
         solver_param['solver_mode'] = 'Adaptive ROM'
         solver_param['adaptive_rom_method'] = self.adaptive_rom_method_entry_var.get()
         solver_param['pod_energy'] = float(self.energy_capture_entry_var.get())
+        solver_param['init_training_win'] = self.training_window_entry_var.get()
+        solver_param['unsampled_update_freq'] = int(self.unsampled_update_freq_entry_var.get())
         
     solver_param['rom_method'] = self.rom_method_entry_var.get()
     solver_param['hyper']      = self.hyper_method_checkbox_check_var.get()
     solver_param['sampling_method'] = self.hyper_method_entry_var.get()
-    solver_param['init_training_win'] = self.training_window_entry_var.get()
-    solver_param['unsampled_update_freq'] = int(self.unsampled_update_freq_entry_var.get())
 
 
     ### time discretization ###
@@ -67,6 +67,7 @@ def solver_parameters_collector(self):
     solver_param['variable3']           = self.visual_3_option_entry_var.get()
     solver_param['variable4']           = self.visual_4_option_entry_var.get()
     solver_param['vis_update_interval'] = int(self.visual_update_interval_entry_var.get())
+    solver_param['plot_fom_flag']       = self.fom_plot_check_var.get()
 
     ### ic data ###
     solver_param['ic_data']   = self.ic_data
