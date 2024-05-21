@@ -233,10 +233,20 @@ def extrapolate_center2face( var , d_var , dx):
 
     return var_left_face , var_right_face
 
-def rusanov_flux_calculator(mass , momx , energy ,gamma , vol , dx , slope_limiter , sol_time):
+def rusanov_flux_calculator(solver_param,state):
 
-    # convert cons to prim
-    rho , vx , p = cons2prim_converter(mass , momx , energy , gamma , vol,sol_time)
+    state            = cons2prim_converter(solver_param,state)
+    Q_prim           = state['Q_prim']
+    Q_prim_user      = results_solver2user_converter(solver_param['cell_number'],Q_prim)
+
+    rho    = Q_prim_user[0,:]
+    vx     = Q_prim_user[1,:]
+    p  = Q_prim_user[2,:]
+    
+    gamma  = solver_param['gamma']
+    dx    = solver_param['vol']
+
+    slope_limiter = solver_param['limiter']
 
     # calculate gradients
     d_rho_dx = gradient_calculator(rho , dx)
@@ -270,7 +280,9 @@ def rusanov_flux_calculator(mass , momx , energy ,gamma , vol , dx , slope_limit
     flux_momx   = 0.5*(rho_face_left*vx_face_left**2+p_face_left + rho_face_right*vx_face_right**2+p_face_right)- diffusion*(rho_face_right*vx_face_right-rho_face_left*vx_face_left)
     flux_energy = 0.5*(vx_face_left*(en_L+p_face_left) + vx_face_right*(en_R+p_face_right))                     - diffusion*(en_R-en_L)
 
-    return flux_mass, flux_momx, flux_energy
+    state['flux_cons'] = np.vstack((flux_mass,flux_momx,flux_energy))
+
+    return state
 
 def roe_flux_calculator(solver_param,rom_param,state):
     
@@ -348,6 +360,7 @@ def roe_flux_calculator(solver_param,rom_param,state):
         flux[1,j+1] = 0.5*(rho[j]*vx[j]**2 + press[j] + rho[j+1]*vx[j+1]+press[j+1])              - diffusion[1,j+1] 
         flux[2,j+1] = 0.5*(vx[j]*(en[j]+press[j])     + vx[j+1]*(en[j+1]+press[j+1]))             - diffusion[2,j+1] 
 
+    
     state['flux_cons'] = flux
 
     return state
