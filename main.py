@@ -312,7 +312,7 @@ class UI(customtkinter.CTk):
         self.flux_scheme_label.grid(row=2 , column=0)
 
         self.flux_scheme_entry_var = customtkinter.StringVar()
-        self.flux_scheme_options = ['Roe','Rusanov']
+        self.flux_scheme_options = ['1st Order Roe','2nd Order Roe','Rusanov']
         self.flux_scheme = customtkinter.CTkOptionMenu(self.physics_frame , values=self.flux_scheme_options , variable=self.flux_scheme_entry_var)
         self.flux_scheme.grid(row=2,column=1 , padx = 15 , pady = 10)
 

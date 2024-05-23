@@ -283,7 +283,7 @@ def rusanov_flux_calculator(solver_param,state):
 
     return state
 
-def roe_flux_calculator(solver_param,rom_param,state):
+def first_order_roe_flux_calculator(solver_param,rom_param,state):
     
     Q_cons           = state['Q_cons']
     state            = cons2prim_converter(solver_param,state)
@@ -364,6 +364,120 @@ def roe_flux_calculator(solver_param,rom_param,state):
 
     return state
 
+def second_order_roe_flux_calculator(solver_param,rom_param,state):
+    
+    Q_cons           = state['Q_cons']
+    state            = cons2prim_converter(solver_param,state)
+    Q_prim           = state['Q_prim']
+    Q_cons_user      = results_solver2user_converter(solver_param['cell_number'],Q_cons)
+    Q_prim_user      = results_solver2user_converter(solver_param['cell_number'],Q_prim)
+
+    rho    = Q_prim_user[0,:]
+    vx     = Q_prim_user[1,:]
+    press  = Q_prim_user[2,:]
+
+    gamma  = solver_param['gamma']
+    vol    = solver_param['vol']
+    dx     = vol
+
+    S_indx_user = rom_param['S_indx_user']
+
+    # number of cell
+    cell_num = len(rho)
+
+    # breakpoint()
+    # calculate gradient
+    df_dx = (np.roll(Q_prim_user,-1) - np.roll(Q_prim_user,1)) / (2*dx)
+
+    # limiter
+
+    slope_limiter = solver_param['limiter']
+
+    if slope_limiter:
+
+        df_dx = np.maximum(0., np.minimum(1., ( (Q_prim_user-np.roll(Q_prim_user,1,axis=0))/dx)/(df_dx + 1.0e-8*(df_dx==0)))) * df_dx
+        df_dx = np.maximum(0., np.minimum(1., (-(Q_prim_user-np.roll(Q_prim_user,-1,axis=0))/dx)/(df_dx + 1.0e-8*(df_dx==0)))) * df_dx
+
+    # face_reconstruction
+    face_prim_user = np.zeros((3,2*(cell_num)+2))
+
+    for indx in range(1,cell_num):
+
+        face_prim_user[:,2*indx]   = Q_prim_user[:,indx-1] + df_dx[:,indx-1] * (dx/2)     # left face 
+        face_prim_user[:,2*indx+1] = Q_prim_user[:,indx]   + df_dx[:,indx] * (dx/2)       # right face 
+
+    rho   = face_prim_user[0,:]
+    vx    = face_prim_user[1,:]
+    press = face_prim_user[2,:]
+
+    # total enthalpy
+    # htot = gamma/(gamma-1)*press/rho+0.5*vx**2
+    # breakpoint()
+    flux = np.zeros((3,cell_num+1))
+    diffusion = np.zeros((3,cell_num+1))
+
+    if solver_param['hyper'] == True:
+
+        range_flux = S_indx_user + 2 
+
+        range_flux_neighbor_left   = range_flux - 1
+        # range_flux_neighbor_right  = range_flux + 1 
+        range_flux = np.concatenate((range_flux,range_flux_neighbor_left))
+        range_flux = np.sort(np.unique(range_flux))
+
+
+    else : 
+        
+        range_flux = range(1,cell_num)
+
+    for j in range_flux:
+        en_L               = press[2*j]    / (gamma-1) + 0.5 * rho[2*j]    * (vx[2*j]**2)
+        en_R               = press[2*j+1]  / (gamma-1) + 0.5 * rho[2*j+1]  * (vx[2*j+1]**2)
+
+        # total enthalpy
+        htot_L = gamma/(gamma-1)*press[2*j]/rho[2*j]+0.5*vx[2*j]**2
+        htot_R = gamma/(gamma-1)*press[2*j+1]/rho[2*j+1]+0.5*vx[2*j+1]**2
+    
+        # Compute Roe averages
+        R=np.sqrt(rho[2*j+1]/rho[2*j])                      # R_{j+1/2}
+        rmoy=R*rho[j]                                   # {hat rho}_{j+1/2}
+        umoy=(R*vx[2*j+1]+vx[2*j])/(R+1)                    # {hat U}_{j+1/2}
+        hmoy=(R*htot_R+htot_L)/(R+1);               # {hat H}_{j+1/2}
+        amoy=np.sqrt((gamma-1.0)*(hmoy-0.5*umoy*umoy))  # {hat a}_{j+1/2}
+        
+        # Auxiliary variables used to compute P_{j+1/2}^{-1}
+        alph1=(gamma-1)*umoy*umoy/(2*amoy*amoy)
+        alph2=(gamma-1)/(amoy*amoy)
+
+        # Compute matrix P^{-1}_{j+1/2}
+        Pinv = np.array([[0.5*(alph1+umoy/amoy), -0.5*(alph2*umoy+1/amoy),  alph2/2],
+                        [1-alph1,                alph2*umoy,                -alph2 ],
+                        [0.5*(alph1-umoy/amoy),  -0.5*(alph2*umoy-1/amoy),  alph2/2]])
+                
+        # Compute matrix P_{j+1/2}
+        P    = np.array([[ 1,              1,              1              ],
+                        [umoy-amoy,        umoy,           umoy+amoy      ],
+                        [hmoy-amoy*umoy,   0.5*umoy*umoy,  hmoy+amoy*umoy ]])
+        
+        # Compute matrix Lambda_{j+1/2}
+        lamb = np.array([[ abs(umoy-amoy),  0,              0                 ],
+                        [0,                 abs(umoy),      0                 ],
+                        [0,                 0,              abs(umoy+amoy)    ]])
+                    
+        # Compute Roe matrix |A_{j+1/2}|
+        A = P @ lamb @ Pinv
+
+        diffusion[:,j] = 0.5 * A @ (Q_cons_user[:,j]-Q_cons_user[:,j-1]) / vol
+
+        flux[0,j] = 0.5*(rho[2*j]*vx[2*j]                 + rho[2*j+1]*vx[2*j+1])                         - diffusion[0,j] 
+        flux[1,j] = 0.5*(rho[2*j]*vx[2*j]**2 + press[2*j] + rho[2*j+1]*vx[2*j+1]+press[2*j+1])         - diffusion[1,j] 
+        flux[2,j] = 0.5*(vx[2*j]*(en_L+press[2*j])        + vx[2*j+1]*(en_R+press[2*j+1]))                - diffusion[2,j] 
+
+    # breakpoint()
+    state['flux_cons'] = flux
+
+    return state
+
 def inviscid_d_flux_dx_calculator(solver_param,rom_param,state):
 
     S_indx_user = rom_param['S_indx_user']
@@ -429,8 +543,11 @@ def residual_calculator(solver_param,rom_param,state):
     if solver_param['flux_scheme'] == 'Rusanov':
         state = rusanov_flux_calculator(solver_param,state)
 
-    elif solver_param['flux_scheme'] == 'Roe':
-        state = roe_flux_calculator(solver_param,rom_param,state)
+    elif solver_param['flux_scheme'] == '1st Order Roe':
+        state = first_order_roe_flux_calculator(solver_param,rom_param,state)
+
+    elif solver_param['flux_scheme'] == '2nd Order Roe':
+        state = second_order_roe_flux_calculator(solver_param,rom_param,state)
 
     # inviscid flux vector terms
     state   = inviscid_d_flux_dx_calculator(solver_param,rom_param,state)
