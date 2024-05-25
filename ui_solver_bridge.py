@@ -7,6 +7,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
+
+import cProfile, pstats, io
+from pstats import SortKey
+
 def driver(self):
     
     # collect all of variables from user interface
@@ -80,6 +84,9 @@ def driver(self):
 
         elif solver_param['solver_mode'] == 'Adaptive ROM':
 
+            # pr = cProfile.Profile()
+            # pr.enable()
+
             state, solver_param , rom_param  = rom_functions.adaptive_rom_progress(solver_param,rom_param,state,iter)
             # if iter >=10:
             #     ax_basis.cla()
@@ -88,6 +95,13 @@ def driver(self):
             #         ax_basis.plot(rom_param['basis'][0:500,i],label='mode' + str(i))
             #         ax_basis.legend()
             #         ax_basis.set_ylim([-1,1])
+
+            # pr.disable()
+            # s = io.StringIO()
+            # sortby = SortKey.CUMULATIVE
+            # ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+            # ps.print_stats()
+            # print(s.getvalue())
             
         # convert cons to prim
         state = solver_functions.cons2prim_converter(solver_param,state)

@@ -4,6 +4,8 @@ import ast
 from tkinter import ttk
 import importlib
 import pandas as pd
+import cProfile
+import pstats
 
 
 import solver_functions
@@ -1050,9 +1052,15 @@ class UI(customtkinter.CTk):
             importlib.reload(rom_functions)
             print(f"Reloaded module: {rom_functions}")
         except ImportError as e:
-            print(f"Error reloading module: {rom_functions}") 
+            print(f"Error reloading module: {rom_functions}")
+
+        # with cProfile.Profile() as pr:
 
         ui_solver_bridge.driver(self)
+
+        # stats = pstats.Stats(pr)
+        # stats.sort_stats(pstats.SortKey.TIME)
+        # stats.dump_stats(filename='needs_profiling2.prof')
 
 
                                                              
