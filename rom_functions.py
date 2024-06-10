@@ -560,7 +560,7 @@ def multi_snapshot_adaptive_rom_progress(solver_param,rom_param,state,iter):
             
                 # Find Q tilda (ROM) with new basis(correction)
 
-                rom_param['q_red0'] = rom_param['basis'].T @ F [:,-1]
+                rom_param['q_red0'] = np.linalg.pinv(rom_param['basis']) @ F [:,-1]
 
                 Q_tilda_correct_solver_int= q_ref + (denormalizor * (rom_param['basis'] @ rom_param['q_red0'] ))
 
@@ -587,7 +587,7 @@ def multi_snapshot_adaptive_rom_progress(solver_param,rom_param,state,iter):
                 rom_param , F = adapt_basis(solver_param,state,rom_param,Q_bar_new_solver_int,iter,Q_red_new,Q_tilda_predict_solver_int=0)
             
                 # Find Q tilda (ROM) with new basis(correction)
-                rom_param['q_red0'] = rom_param['basis'].T @ F [:,-1]
+                rom_param['q_red0'] = np.linalg.pinv(rom_param['basis']) @ F [:,-1]
 
                 Q_tilda_correct_solver_int= q_ref + (denormalizor * (rom_param['basis'] @ rom_param['q_red0'] ))
                 
@@ -687,14 +687,19 @@ def adapt_basis(solver_param,state,rom_param,Q_bar_new_solver_int,iter,Q_red_new
 
         Q_R[:,-1]         = rom_param['basis'].T @ F [:,-1]
 
+        # Q_R = np.linalg.pinv(rom_param['basis'][rom_param['S_indx_solver'],:]) @ F[rom_param['S_indx_solver'],:]
+
         pinv_Q_R = np.linalg.pinv(Q_R)
 
         rom_param['basis'] = F @ pinv_Q_R
 
+        # rom_param['basis'][rom_param['S_indx_solver'],:] = F[rom_param['S_indx_solver'],:] @ pinv_Q_R
+
         new_basis = rom_param['basis']
 
         # orthogonalize the basis
-        rom_param['basis'] , _ = np.linalg.qr(rom_param['basis'])
+        # rom_param['basis'] , _ = np.linalg.qr(rom_param['basis'])
+        rom_param['basis'] , _ , _ = np.linalg.svd(rom_param['basis'],full_matrices=False)
 
 
     elif solver_param['adaptive_rom_method'] == 'Initiative Adapt':

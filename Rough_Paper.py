@@ -2,53 +2,36 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-# rom = np.load(r"C:\GIT_Fork\ROMify\examples\shock_tube\Adaptive ROM 15000 snapshots Explicit - FD Euler GalerkinGappy POD cons.npy")/0.002
-fom = np.load(r"C:\GIT_Fork\ROMify\examples\sedov_blast_wave\FOM 50000 snapshots Explicit - FD Euler prim.npy")
-
-# rusanov     = np.load(r"C:\GIT_Fork\ROMify\examples\shock_tube\RusanovFOM 3000 snapshots Explicit - FD Euler cons.npy")/0.002
-# roe = np.load(r"C:\GIT_Fork\ROMify\examples\shock_tube\RoeFOM 3000 snapshots Explicit - FD Euler cons.npy")/0.002
-
-fig,ax = plt.subplots(3,1)
-
-x=range(500)
-
-for iter in range(0,50000,1000):
-
-    # rom_snapshot = rom[0,:,iter].ravel()
-    rho = fom[0,:,iter]
-    vx = fom[1,:,iter]
-    press = fom[2,:,iter]
-
-    ax[0].cla()
-    ax[1].cla()
-    ax[2].cla()
-
-    ax[0].plot(x,rho  ,color='tab:blue')
-    ax[1].plot(x,vx   ,color='tab:red')
-    ax[2].plot(x,press,color='tab:green')
-
-    ax[0].set_ylabel('Density')
-    ax[1].set_ylabel('Velocity')
-    ax[2].set_ylabel('Pressure')
-
-    ax[0].set_xlabel('x')
-    ax[1].set_xlabel('x')
-    ax[2].set_xlabel('x')
-
-    ax[0].relim()
-    ax[0].autoscale()
-
-    ax[1].relim()
-    ax[1].autoscale()
-
-    ax[2].relim()
-    ax[2].autoscale()
+full_basis    = np.load(r"C:\Users\mohag\OneDrive - University of Kansas\KU - Aerospace PhD\Research Related\basis_update_sampled_only_comparsion\colliding_shocks\full_basis_update\Adaptive ROM 3000 snapshots Explicit - FD Euler GalerkinGappy POD + Shock basis.npy")
+sampled_basis = np.load(r"C:\Users\mohag\OneDrive - University of Kansas\KU - Aerospace PhD\Research Related\basis_update_sampled_only_comparsion\colliding_shocks\sampled_basis_update\Adaptive ROM 3000 snapshots Explicit - FD Euler GalerkinGappy POD + Shock basis.npy")
+svd_basis     = np.load(r"C:\Users\mohag\OneDrive - University of Kansas\KU - Aerospace PhD\Research Related\basis_update_sampled_only_comparsion\colliding_shocks\svd_basis_update\Adaptive ROM 3000 snapshots Explicit - FD Euler GalerkinGappy POD + Shock basis.npy")
 
 
+fig,ax = plt.subplots(3,3,sharex=True)
 
-    # ax.legend()
-    # ax.set_title(iter)
+ax = ax.flatten()
+
+iter_list=np.array([11,1000,2000,2999])
+
+for iter in iter_list:
+
+    for mode in range(9):
+
+        ax[mode].cla()
+
+        ax[mode].plot(full_basis[:,mode,iter],color='tab:blue'  ,label='full')
+        ax[mode].plot(sampled_basis[:,mode,iter],color='tab:red',label='sampled')
+        ax[mode].plot(svd_basis[:,mode,iter],color='black',label='svd')
+
+        ax[mode].relim()
+        ax[mode].autoscale()
+
+        ax[mode].legend()
+
+        ax[mode].set_title('mode = ' + str(mode))
+
+
     print(iter)
-    plt.pause(0.01)
+    plt.pause(1)
 
-plt.show()
+plt.show(block=True)
