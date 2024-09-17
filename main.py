@@ -287,7 +287,7 @@ class UI(customtkinter.CTk):
         self.visual_label = customtkinter.CTkLabel(self.visual_frame , text='Visualization')
         self.visual_label.grid(row=0,column=0,columnspan=2)
 
-        self.visual_options = ['None','Density','Pressure','Temprature','Velocity','Heat Release','Mass Fraction']
+        self.visual_options = ['None','Density','Pressure','Temprature','Velocity','Heat Release']
 
         self.visual_1_option_label = customtkinter.CTkLabel(self.visual_frame , text='Variable #1')
         self.visual_1_option_label.grid(row=1,column=0,padx=15,pady=10)

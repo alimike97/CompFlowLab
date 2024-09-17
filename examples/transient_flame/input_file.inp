@@ -9,7 +9,7 @@ init_training_win 	= 10
 
 # time discretization
 dt            = 1e-8
-num_steps     = 3500
+num_steps     = 100000
 time_scheme   = explicit_fd_euler
 dual_time     = false
 res_tol       = 1e-5
@@ -24,15 +24,15 @@ ic_path = C:/GIT_Fork/ROMify/examples/transient_flame/steady_IC_trans.npy
 
 # inlet BC
 rho_inlet        = extrap
-vel_inlet        = 0.823675805776555
+vel_inlet        = 71.47315142
 press_inlet      = extrap
-temp_inlet       = 300
+temp_inlet       = 314.46442734
 mass_frac_inlet  = [9.48E-03,5.54E-20,-1.13E-17,1.37E-01,-5.26E-18,-2.00E-18,2.40E-18,2.34E-17,8.54E-01]
 
 # outlet BC
 rho_outlet        = extrap
 vel_outlet        = extrap
-press_outlet      = 101325
+press_outlet      = extrap
 temp_outlet       = extrap
 mass_frac_outlet  = extrap
 
@@ -47,7 +47,7 @@ variable1 	= Density
 variable2 	= Pressure
 variable3 	= Velocity
 variable4 	= None
-update_interval = 1
+update_interval = 100
 
 
 

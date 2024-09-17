@@ -3,8 +3,8 @@ import solver_functions
 
 def visual_var_collector(solver_param):
 
-    visual_options            = ['Density','Pressure','Temprature','Velocity','Heat Release','Mass Fraction']
-    visual_options_indx_stack = [   0     ,     2    ,      3     ,     1    ,      0       ,       0       ]
+    visual_options            = ['Density','Pressure','Temprature','Velocity','Heat Release']
+    visual_options_indx_stack = [   0     ,     2    ,      3     ,     1    ,      1000    ]
     
     for item in visual_options:
 
@@ -114,14 +114,13 @@ def in_progress_plot(fig,axs,iter,solver_param,rom_param,state,visual_param):
     visual_var2 = visual_param['visual_var2'] 
     visual_var3 = visual_param['visual_var3'] 
     visual_var4 = visual_param['visual_var4'] 
-    
 
     y11= prim_results[visual_var1,2:-2]
     y21= prim_results[visual_var2,2:-2]
     y31= prim_results[visual_var3,2:-2]
     y41= prim_results[visual_var4,2:-2]
+
     # y41= state['heat_release'][2:-2]
-    # y41= state['int_energy'][2:-2]
 
 
     if y11.size == 0 : 

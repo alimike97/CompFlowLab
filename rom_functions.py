@@ -432,7 +432,7 @@ def single_snapshot_adaptive_rom_progress(solver_param,rom_param,state,iter):
             sampling_adapt_freq = solver_param['unsampled_update_freq']
 
             # Run a FOM at whole domain to update unsampled points at a specific freq
-            if (sampling_adapt_freq != 0 and solver_param['iter'] % sampling_adapt_freq == 0) or (iter == int(solver_param['init_training_win'])+1):
+            if (sampling_adapt_freq != 0 and solver_param['iter'] % sampling_adapt_freq == 0):
 
                 Q_bar_star_old = state['Q_bar']
                 solver_param['hyper'] = False
@@ -534,7 +534,9 @@ def multi_snapshot_adaptive_rom_progress(solver_param,rom_param,state,iter):
             sampling_adapt_freq = solver_param['unsampled_update_freq']
 
             # Run a FOM at whole domain to update unsampled points at a specific freq
-            if (sampling_adapt_freq != 0 and solver_param['iter'] % sampling_adapt_freq == 0) or (iter == int(solver_param['init_training_win'])+1):
+            # if (sampling_adapt_freq != 0 and solver_param['iter'] % sampling_adapt_freq == 0) or (iter == int(solver_param['init_training_win'])+1):
+            if (sampling_adapt_freq != 0 and solver_param['iter'] % sampling_adapt_freq == 0):
+
                 Q_bar_star_old = state['Q_bar']
                 solver_param['hyper'] = False
                 solver_param['dt'] = sampling_adapt_freq * solver_param['dt']
@@ -578,15 +580,16 @@ def multi_snapshot_adaptive_rom_progress(solver_param,rom_param,state,iter):
                 state              = time_integrator_functions.advance_time(solver_param,state)
                 Q_bar_new_sampling = state['Q_cons']
 
-                # Estimate FOM at unsampled points using old basis
+                # Estimate FOM at unsampled points using old basis (DEIM Equation)
 
                 decen_norm_Q_bar_new_sampling           = normalizor[rom_param['S_indx_solver']]*(Q_bar_new_sampling-q_ref[rom_param['S_indx_solver']])
-                Q_red_new                               = np.linalg.pinv(rom_param['basis'][rom_param['S_indx_solver']]) @ decen_norm_Q_bar_new_sampling
-                Q_bar_new_solver_int                    = q_ref + (denormalizor * (rom_param['basis'] @ Q_red_new))
+                C                                       = np.linalg.pinv(rom_param['basis'][rom_param['S_indx_solver']]) @ decen_norm_Q_bar_new_sampling
+                Q_bar_new_solver_int                    = q_ref + (denormalizor * (rom_param['basis'] @ C ))
 
                 rom_param , F = adapt_basis(solver_param,state,rom_param,Q_bar_new_solver_int,iter,Q_red_new,Q_tilda_predict_solver_int=0)
             
                 # Find Q tilda (ROM) with new basis(correction)
+
                 rom_param['q_red0'] = np.linalg.pinv(rom_param['basis']) @ F [:,-1]
 
                 Q_tilda_correct_solver_int= q_ref + (denormalizor * (rom_param['basis'] @ rom_param['q_red0'] ))
