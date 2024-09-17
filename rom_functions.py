@@ -586,7 +586,7 @@ def multi_snapshot_adaptive_rom_progress(solver_param,rom_param,state,iter):
                 C                                       = np.linalg.pinv(rom_param['basis'][rom_param['S_indx_solver']]) @ decen_norm_Q_bar_new_sampling
                 Q_bar_new_solver_int                    = q_ref + (denormalizor * (rom_param['basis'] @ C ))
 
-                rom_param , F = adapt_basis(solver_param,state,rom_param,Q_bar_new_solver_int,iter,Q_red_new,Q_tilda_predict_solver_int=0)
+                rom_param , F = adapt_basis(solver_param,state,rom_param,Q_bar_new_solver_int,iter,C,Q_tilda_predict_solver_int=0)
             
                 # Find Q tilda (ROM) with new basis(correction)
 
