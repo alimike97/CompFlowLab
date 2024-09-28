@@ -11,7 +11,7 @@ import numpy as np
 # basis           = np.load(r"C:\GIT_Fork\ROMify\examples\free_flame\basis_save.npy")
 # S_indx_solver   = np.load(r"C:\GIT_Fork\ROMify\examples\free_flame\S_indx_solver_save_all.npy")
 
-samples = np.load(r"C:\GIT_Fork\ROMify\examples\free_flame_with_perturbation\Adaptive ROM 35000 snapshots Explicit - FD Euler GalerkinQDEIM samples_user.npy")
+# samples = np.load(r"C:\GIT_Fork\ROMify\examples\free_flame_with_perturbation\Adaptive ROM 35000 snapshots Explicit - FD Euler GalerkinQDEIM samples_user.npy")
 
 # res_fom = np.load(r"C:\GIT_Fork\ROMify\examples\free_flame\res_fom.npy")
 # res_rom = np.load(r"C:\GIT_Fork\ROMify\examples\free_flame\res_rom.npy")
@@ -19,14 +19,16 @@ samples = np.load(r"C:\GIT_Fork\ROMify\examples\free_flame_with_perturbation\Ada
 # fom_super_small = np.load(r"C:\GIT_Fork\ROMify\examples\classic_shock_tube\FOM 30000 snapshots Explicit - FD Euler prim_dt_1en6.npy")
 
 
-fom = np.load(r"C:\GIT_Fork\ROMify\examples\free_flame_with_perturbation\FOM 35000 snapshots Explicit - FD Euler prim.npy")
+fom = np.load(r"C:\GIT_Fork\ROMify\examples\free_flame_with_perturbation\FOM 50000 snapshots Explicit - FD Euler prim.npy")
 
-# ic_data = fom_small[:,:,-1]
+# print(fom[:,0])
 
-# np.save(r"C:\GIT_Fork\ROMify\examples\free_flame\steady_IC_pert.npy",ic_data)
+# ic_data = fom[:,:,3142]
+
+# np.save(r"C:\GIT_Fork\ROMify\examples\free_flame\steady_IC_accelerated_with_perturbation.npy",ic_data)
 
 # fom_small = np.load(r"C:\GIT_Fork\ROMify\examples\classic_shock_tube\FOM 3000 snapshots Explicit - FD Euler prim_dt_1en5.npy")
-arom = np.load(r"C:\GIT_Fork\ROMify\examples\free_flame_with_perturbation\Adaptive ROM 35000 snapshots Explicit - FD Euler GalerkinQDEIM prim.npy")
+arom = np.load(r"C:\GIT_Fork\ROMify\examples\free_flame_with_perturbation\Adaptive ROM 50000 snapshots Explicit - FD Euler GalerkinQDEIM prim.npy")
 
 
 # fom_large = np.load(r"C:\GIT_Fork\ROMify\examples\classic_shock_tube\FOM 300 snapshots Explicit - FD Euler prim_dt_1en4.npy")
@@ -68,7 +70,7 @@ fig.set_size_inches(15,6)
 # # ax[2].legend()
 
 
-x=np.linspace(0,0.03,1000)
+x=np.linspace(0,0.01,500)
 # iter_axis = np.linspace(0,0.35,300)
 
 # # plt.show()
@@ -101,9 +103,9 @@ x=np.linspace(0,0.03,1000)
 # plt.show()
 
 
-for iter in range(0,35000,200):
+for iter in range(0,50000,500):
 
-    s_indx = np.nonzero(samples[:,iter])[0]
+    # s_indx = np.nonzero(samples[:,iter])[0]
 
     ax[0,0].cla()
     ax[1,0].cla()
@@ -132,7 +134,7 @@ for iter in range(0,35000,200):
 #     ax.plot(x,P_fom_large      ,label='FOM_large')
     ax[0,0].plot(x,rho      ,color='tab:blue'  ,label='FOM')
     ax[1,0].plot(x,u        ,color='tab:green' ,label='FOM')
-    # ax[0,1].plot(x,P        ,color='tab:orange',label='FOM')
+    ax[0,1].plot(x,P        ,color='tab:orange',label='FOM')
     ax[1,1].plot(x,T        ,color='tab:red'   ,label='FOM')
 
     ax[0,0].plot(x,a_rho      ,linestyle='--',color='tab:blue'  ,label='A-ROM')
@@ -140,10 +142,10 @@ for iter in range(0,35000,200):
     ax[0,1].plot(x,a_P        ,linestyle='--',color='tab:orange',label='A-ROM')
     ax[1,1].plot(x,a_T        ,linestyle='--',color='tab:red'   ,label='A-ROM')
 
-    ax[0,0].scatter(x[s_indx] , rho[s_indx]      ,color='black')
-    ax[1,0].scatter(x[s_indx] , u[s_indx]        ,color='black')
-    ax[0,1].scatter(x[s_indx] , a_P[s_indx]      ,color='black')
-    ax[1,1].scatter(x[s_indx] , a_T[s_indx]      ,color='black')
+    # ax[0,0].scatter(x[s_indx] , rho[s_indx]      ,color='black')
+    # ax[1,0].scatter(x[s_indx] , u[s_indx]        ,color='black')
+    # ax[0,1].scatter(x[s_indx] , a_P[s_indx]      ,color='black')
+    # ax[1,1].scatter(x[s_indx] , a_T[s_indx]      ,color='black')
 
     ax[0,0].legend()
     ax[1,0].legend()
@@ -162,7 +164,9 @@ for iter in range(0,35000,200):
     ax[1,1].set_ylabel('Temperature[K]')
 #     ax.set_ylabel('P')
 
-    ax[0,1].set_ylim(95e3,105e3)
+    ax[0,1].set_ylim(95e3,107e3)
+    ax[1,0].set_ylim(-10,10)
+
 #     counter = counter + 1
 #     counter2 = counter2 + 100
 
@@ -173,7 +177,7 @@ for iter in range(0,35000,200):
 
 
 
-#     print(iter)
+    print(iter)
 
 # basis = basis[:,0:11]
 
@@ -199,6 +203,17 @@ for iter in range(0,35000,200):
 
 
 #     print(iter)
+
+
+# trans_indx = np.where(x>=0.002)[0][0]
+
+# new_data = fom[:,trans_indx,2000]
+
+# fom[:,0:trans_indx,2000] = new_data[:,np.newaxis]
+
+# new_ic = fom[:,:,2000]
+
+# np.save(r"C:\GIT_Fork\ROMify\examples\free_flame\new_ic.npy",new_ic)
 
 
 

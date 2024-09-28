@@ -61,6 +61,7 @@ def driver(self):
 
     # begin simulation
     start_time = time.time()
+    state['time'] = 0
 
     for iter in range(solver_param['num_step']):
 
@@ -90,6 +91,8 @@ def driver(self):
         visualization_functions.in_progress_plot(fig,axs,iter,solver_param,rom_param,state,visual_param)
         
         plt.show(block=False)
+
+        state['time'] = state['time'] + solver_param['dt']
 
         # breakpoint()
 

@@ -259,7 +259,7 @@ def update_ghost_cell(solver_param,state):
                     A     = float(parts[1])  # amplitude
                     f     = float(parts[2])  # frequency
 
-                    t = solver_param['dt'] * solver_param['iter']
+                    t = state['time']
 
                     Q_prim_user[4:,0:2] = value + A*np.sin(f*t)
 
@@ -277,7 +277,7 @@ def update_ghost_cell(solver_param,state):
                     A     = float(parts[1])  # amplitude
                     f     = float(parts[2])  # frequency
 
-                    t = solver_param['dt'] * solver_param['iter']
+                    t = state['time']
 
                     Q_prim_user[eqn,0:2] = value + A*np.sin(f*t)
 
@@ -304,7 +304,7 @@ def update_ghost_cell(solver_param,state):
                     A     = float(parts[1])  # amplitude
                     f     = float(parts[2])  # frequency
 
-                    t = solver_param['dt'] * solver_param['iter']
+                    t = state['time']
 
                     Q_prim_user[4:,-2:] = value + A*np.sin(f*t)
 
@@ -322,9 +322,10 @@ def update_ghost_cell(solver_param,state):
                     A     = float(parts[1])  # amplitude
                     f     = float(parts[2])  # frequency
 
-                    t = solver_param['dt'] * solver_param['iter']
+                    t = state['time']
 
                     Q_prim_user[eqn,-2:] = value + A*np.sin(f*t)
+
 
                 else:
                  

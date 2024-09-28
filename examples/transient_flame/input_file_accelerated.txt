@@ -1,0 +1,54 @@
+# solver setup
+
+solver_mode 		= fom
+rom_method  		= galerkin
+pod_energy  		= 99.999
+hyper	    		= true
+hyper_method		= qdeim
+init_training_win 	= 10
+
+# time discretization
+dt            = 1e-8
+num_steps     = 3500
+time_scheme   = explicit_fd_euler
+dual_time     = false
+res_tol       = 1e-5
+
+# space discretization
+x_initial   = 0
+x_final     = 0.01
+
+cell_number = 500 
+
+ic_path = C:\GIT_Fork\ROMify\examples\transient_flame\steady_IC_trans_accelerated.npy
+
+
+# inlet BC
+rho_inlet        = extrap
+vel_inlet        = 7.08947279e+01
+press_inlet      = extrap
+temp_inlet       = 3.14851035e+02
+mass_frac_inlet  = [8.62408133e-03, -1.98125128e-22, -5.66548507e-17,1.36881642e-01,-1.19575913e-19, -1.35907392e-15, -9.77408847e-16, -7.94368466e-16,8.54494277e-01]
+
+# outlet BC
+rho_outlet        = extrap
+vel_outlet        = extrap
+press_outlet      = extrap
+temp_outlet       = extrap
+mass_frac_outlet  = extrap
+
+# gas model
+gas_model   = H2/Air Combustion
+flux_scheme = roe1
+viscosity   = true
+
+# Visualization
+
+variable1 	= Density
+variable2 	= Pressure
+variable3 	= Velocity
+variable4 	= None
+update_interval = 1
+
+
+
