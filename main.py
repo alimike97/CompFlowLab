@@ -25,7 +25,7 @@ class UI(customtkinter.CTk):
         customtkinter.set_appearance_mode("Dark")      # Modes: system (default), light, dark
         customtkinter.set_default_color_theme("dark-blue")  # Themes: blue (default), dark-blue, green
 
-        self.window_width = 1280
+        self.window_width = 1350
         self.window_length= 800
 
         self.screen_width  = self.winfo_screenwidth()
@@ -91,6 +91,11 @@ class UI(customtkinter.CTk):
         self.adaptive_rom_mode_checkbox = customtkinter.CTkCheckBox(self.solver_mode_frame , text='Adaptive ROM', variable=self.adaptive_rom_mode_checkbox_check_var , 
                                                                     command=lambda: self.solver_mode_checkbox_callback(option='Adaptive ROM'))
         self.adaptive_rom_mode_checkbox.grid(row=1,column=2,padx=5, pady=10)
+
+        self.hybrid_rom_mode_checkbox_check_var = customtkinter.BooleanVar()
+        self.hybrid_rom_mode_checkbox = customtkinter.CTkCheckBox(self.solver_mode_frame , text='Hybrid ROM', variable=self.hybrid_rom_mode_checkbox_check_var , 
+                                                                  command=lambda: self.solver_mode_checkbox_callback(option='Hybrid ROM'))
+        self.hybrid_rom_mode_checkbox.grid(row=1,column=3,padx=5, pady=10)
 
         self.rom_method_label = customtkinter.CTkLabel(self.solver_mode_frame , text='ROM Method')
         self.rom_method_label.grid(row=2,column=0,padx=5, pady=10)
@@ -411,6 +416,7 @@ class UI(customtkinter.CTk):
             self.fom_mode_checkbox_check_var.set(1)
             self.rom_mode_checkbox_check_var.set(0)
             self.adaptive_rom_mode_checkbox_check_var.set(0)
+            self.hybrid_rom_mode_checkbox_check_var.set(0)
 
             self.rom_method.configure(state = 'disabled')
             self.adaptive_rom_method.configure(state = 'disabled')
@@ -431,6 +437,7 @@ class UI(customtkinter.CTk):
             self.rom_mode_checkbox_check_var.set(1)
             self.fom_mode_checkbox_check_var.set(0)
             self.adaptive_rom_mode_checkbox_check_var.set(0)
+            self.hybrid_rom_mode_checkbox_check_var.set(0)
 
             self.rom_method.configure(state = 'normal')
             self.energy_capture.configure(state = 'normal')
@@ -450,6 +457,7 @@ class UI(customtkinter.CTk):
             self.adaptive_rom_mode_checkbox_check_var.set(1)
             self.fom_mode_checkbox_check_var.set(0)
             self.rom_mode_checkbox_check_var.set(0)
+            self.hybrid_rom_mode_checkbox_check_var.set(0)
 
             self.rom_method.configure(state = 'normal')
             self.adaptive_rom_method.configure(state = 'normal')
@@ -460,7 +468,25 @@ class UI(customtkinter.CTk):
             self.FOM_file.configure(state = 'normal')
             self.FOM_file_button.configure(state = 'normal')
             self.training_window.configure(state = 'normal')
-            self.unsampled_update_freq.configure(state = 'normal')              
+            self.unsampled_update_freq.configure(state = 'normal')
+
+        if option == 'Hybrid ROM':
+
+            self.hybrid_rom_mode_checkbox_check_var.set(1)
+            self.adaptive_rom_mode_checkbox_check_var.set(0)
+            self.fom_mode_checkbox_check_var.set(0)
+            self.rom_mode_checkbox_check_var.set(0)
+
+            self.rom_method.configure(state = 'normal')
+            self.adaptive_rom_method.configure(state = 'normal')
+            self.energy_capture.configure(state = 'disabled')
+            self.hyper_method_checkbox.configure(state = 'disabled')
+            self.hyper_method_checkbox_check_var.set(1)
+            self.hyper_method.configure(state = 'normal')
+            self.FOM_file.configure(state = 'normal')
+            self.FOM_file_button.configure(state = 'normal')
+            self.training_window.configure(state = 'normal')
+            self.unsampled_update_freq.configure(state = 'normal')           
   
     def working_dir_callback(self):
 

@@ -89,7 +89,7 @@ def initial_plot(axs,solver_param,visual_param):
     visual_param['plot32'] = plot32 
     visual_param['plot42'] = plot42 
 
-    if solver_param['hyper'] == True or solver_param['solver_mode']=='Adaptive ROM':
+    if solver_param['hyper'] == True or solver_param['solver_mode']=='Adaptive ROM' or solver_param['solver_mode']=='Hybrid ROM':
 
         scatter1 = axs[0, 0].scatter([], [] , 7 ,color='black',marker='o',label='Sampling Points')
         scatter2 = axs[0, 1].scatter([], [] , 7 ,color='black',marker='o',label='Sampling Points') 

@@ -24,6 +24,15 @@ def solver_parameters_collector(self):
         solver_param['pod_energy'] = float(self.energy_capture_entry_var.get())
         solver_param['init_training_win'] = self.training_window_entry_var.get()
         solver_param['unsampled_update_freq'] = int(self.unsampled_update_freq_entry_var.get())
+
+
+    elif self.hybrid_rom_mode_checkbox_check_var.get() == True:
+
+        solver_param['solver_mode'] = 'Hybrid ROM'
+        solver_param['adaptive_rom_method'] = self.adaptive_rom_method_entry_var.get()
+        solver_param['pod_energy'] = float(self.energy_capture_entry_var.get())
+        solver_param['init_training_win'] = self.training_window_entry_var.get()
+        solver_param['unsampled_update_freq'] = int(self.unsampled_update_freq_entry_var.get())
         
     solver_param['rom_method'] = self.rom_method_entry_var.get()
     solver_param['hyper']      = self.hyper_method_checkbox_check_var.get()

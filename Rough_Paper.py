@@ -19,11 +19,21 @@ import numpy as np
 # fom_super_small = np.load(r"C:\GIT_Fork\ROMify\examples\classic_shock_tube\FOM 30000 snapshots Explicit - FD Euler prim_dt_1en6.npy")
 
 
-fom           = np.load(r"C:\Users\mohag\OneDrive - University of Kansas\KU - Aerospace PhD\Research Related\error_analysis_of_ROM\shock_tube_fom\FOM 3000 snapshots Explicit - FD Euler cons.npy")
-arom_original = np.load(r"C:\Users\mohag\OneDrive - University of Kansas\KU - Aerospace PhD\Research Related\error_analysis_of_ROM\shock_tube_initial_arom\Adaptive ROM 3000 snapshots Explicit - FD Euler GalerkinQDEIM cons.npy")
-arom_improved = np.load(r"C:\Users\mohag\OneDrive - University of Kansas\KU - Aerospace PhD\Research Related\error_analysis_of_ROM\shock_tube_improved_arom\Adaptive ROM 3000 snapshots Explicit - FD Euler GalerkinQDEIM cons.npy")
+fom           = np.load(r"C:\GIT_Fork\ROMify\examples\free_flame_with_perturbation\Hybrid ROM 60000 snapshots Explicit - FD Euler GalerkinQDEIM prim.npy")
+# arom_original = np.load(r"C:\Users\mohag\OneDrive - University of Kansas\KU - Aerospace PhD\Research Related\error_analysis_of_ROM\shock_tube_initial_arom\Adaptive ROM 3000 snapshots Explicit - FD Euler GalerkinQDEIM cons.npy")
+# arom_improved = np.load(r"C:\Users\mohag\OneDrive - University of Kansas\KU - Aerospace PhD\Research Related\error_analysis_of_ROM\shock_tube_improved_arom\Adaptive ROM 3000 snapshots Explicit - FD Euler GalerkinQDEIM cons.npy")
 
 # fom = np.dstack((fom1,fom2))
+
+# fom_res = np.load(r"C:\Users\mohag\Desktop\fom_res.npy")
+# rom_res = np.load(r"C:\Users\mohag\Desktop\rom_res.npy")
+
+# import matplotlib.pyplot as plt
+# plt.figure()
+# plt.plot(fom_res)
+# plt.plot(rom_res,linestyle='--')
+
+# plt.show()
 
 # np.save(r"C:\Users\mohag\OneDrive - University of Kansas\KU - Aerospace PhD\Research Related\Initial_Detonation_Wave_Wall_Reflected\FOM 61000 fine mesh snapshots Explicit - FD Euler prim.npy",fom)
 
@@ -61,7 +71,7 @@ arom_improved = np.load(r"C:\Users\mohag\OneDrive - University of Kansas\KU - Ae
 # # P = fom[2,:,6000].ravel()
 # # u = fom[1,:,6000].ravel()
 
-fig , ax = plt.subplots(1,1)
+fig , ax = plt.subplots(2,2)
 
 fig.set_size_inches(15,6)
 
@@ -76,7 +86,7 @@ fig.set_size_inches(15,6)
 # # ax[2].legend()
 
 
-# x=np.linspace(0,0.12,600)
+x=np.linspace(0,0.01,500)
 # iter_axis = np.linspace(0,0.35,300)
 
 # # plt.show()
@@ -108,24 +118,24 @@ fig.set_size_inches(15,6)
 
 # plt.show()
 
-old_error = np.zeros(3000)
-new_error = np.zeros(3000)
+# old_error = np.zeros(3000)
+# new_error = np.zeros(3000)
 
 
-for iter in range(0,3000):
+for iter in range(0,60000,500):
 
     # s_indx = np.nonzero(samples[:,iter])[0]
 
-    # ax[0,0].cla()
-    # ax[1,0].cla()
-    # ax[0,1].cla()
-    # ax[1,1].cla()
+    ax[0,0].cla()
+    ax[1,0].cla()
+    ax[0,1].cla()
+    ax[1,1].cla()
 
 
-    # hr  = fom[-1,:,iter].ravel()
-    # u   = fom[1,:,iter].ravel()
-    # P   = fom[2,:,iter].ravel()
-    # T   = fom[3,:,iter].ravel()
+    hr  = fom[-1,:,iter].ravel()
+    u   = fom[1,:,iter].ravel()
+    P   = fom[2,:,iter].ravel()
+    T   = fom[3,:,iter].ravel()
 
     # a_rho = arom[0,:,iter].ravel()
     # a_u   = arom[1,:,iter].ravel()
@@ -141,10 +151,10 @@ for iter in range(0,3000):
     # ax.plot(x,P_fom_small      ,label='FOM-small')
 #     ax.plot(x,P_arom_small     ,label='AROM')
 #     ax.plot(x,P_fom_large      ,label='FOM_large')
-    # ax[0,0].plot(x,hr      ,color='tab:blue'  ,label='FOM')
-    # ax[1,0].plot(x,u        ,color='tab:green' ,label='FOM')
-    # ax[0,1].plot(x,P        ,color='tab:orange',label='FOM')
-    # ax[1,1].plot(x,T        ,color='tab:red'   ,label='FOM')
+    ax[0,0].plot(x,hr      ,color='tab:blue'  ,label='FOM')
+    ax[1,0].plot(x,u        ,color='tab:green' ,label='FOM')
+    ax[0,1].plot(x,P        ,color='tab:orange',label='FOM')
+    ax[1,1].plot(x,T        ,color='tab:red'   ,label='FOM')
 
     # ax[0,0].plot(x,a_rho      ,linestyle='--',color='tab:blue'  ,label='A-ROM')
     # ax[1,0].plot(x,a_u        ,linestyle='--',color='tab:green' ,label='A-ROM')
@@ -179,31 +189,31 @@ for iter in range(0,3000):
 #     counter = counter + 1
 #     counter2 = counter2 + 100
 
-    # plt.pause(1e-6)
+    plt.pause(1e-6)
     
 
 #     # q_replica = qref+(denorm*(basis@(basis.T@(norm*(q-qref)))))
 
 
-    # print(iter)
+    print(iter)
 
-    arom_original_data = arom_original[:,:,iter].ravel()
-    arom_improved_data = arom_improved[:,:,iter].ravel()
-    fom_data           = fom[:,:,iter].ravel()
+    # arom_original_data = arom_original[:,:,iter].ravel()
+    # arom_improved_data = arom_improved[:,:,iter].ravel()
+    # fom_data           = fom[:,:,iter].ravel()
 
-    old_error[iter] = np.linalg.norm(arom_original_data - fom_data)/np.linalg.norm(fom_data)
-    new_error[iter] = np.linalg.norm(arom_improved_data - fom_data)/np.linalg.norm(fom_data)
+    # old_error[iter] = np.linalg.norm(arom_original_data - fom_data)/np.linalg.norm(fom_data)
+    # new_error[iter] = np.linalg.norm(arom_improved_data - fom_data)/np.linalg.norm(fom_data)
 
 
-ax.plot(new_error,label='improved a-rom')
-ax.plot(old_error,label='initial  a-rom')
+# ax.plot(new_error,label='improved a-rom')
+# ax.plot(old_error,label='initial  a-rom')
 
-ax.set_ylabel('normalized error')
-ax.set_xlabel('iteration')
+# ax.set_ylabel('normalized error')
+# ax.set_xlabel('iteration')
 
-ax.set_yscale('log')
+# ax.set_yscale('log')
 
-ax.legend()
+# ax.legend()
 
 
 plt.show()

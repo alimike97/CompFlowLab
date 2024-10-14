@@ -29,7 +29,7 @@ def driver(self):
     state = solver_functions.prim2cons_converter(solver_param, state)
 
     # initialize rom if necessary
-    if solver_param['solver_mode'] == 'FOM' or solver_param['solver_mode'] == 'Adaptive ROM':
+    if solver_param['solver_mode'] == 'FOM' or solver_param['solver_mode'] == 'Adaptive ROM' or solver_param['solver_mode'] == 'Hybrid ROM':
 
         S_indx_user               = np.arange(0,solver_param['cell_number'])
         S_indx_solver             = rom_functions.user2solver_indx_converter(S_indx_user,3,solver_param['cell_number'])
@@ -81,6 +81,10 @@ def driver(self):
 
             state, solver_param , rom_param  = rom_functions.adaptive_rom_progress(solver_param,rom_param,state,iter)
 
+        elif solver_param['solver_mode'] == 'Hybrid ROM':
+
+            state, solver_param , rom_param  = rom_functions.hybrid_rom_progress(solver_param,rom_param,state,iter)
+
         # convert cons to prim
         state = solver_functions.cons2prim_converter(solver_param,state)
 
@@ -130,7 +134,7 @@ def driver(self):
 
         save_title = solver_param['solver_mode'] + ' ' + str(solver_param['num_step']) + ' ' + 'snapshots' + ' ' +solver_param['time_scheme'] 
 
-    elif solver_param['solver_mode'] == 'ROM' or solver_param['solver_mode'] == 'Adaptive ROM':
+    elif solver_param['solver_mode'] == 'ROM' or solver_param['solver_mode'] == 'Adaptive ROM' or solver_param['solver_mode'] == 'Hybrid ROM' :
 
         save_title = solver_param['solver_mode'] + ' ' + str(solver_param['num_step']) + ' ' + 'snapshots' + ' ' + solver_param['time_scheme'] + ' ' + solver_param['rom_method']
 
