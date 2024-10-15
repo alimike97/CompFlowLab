@@ -8,12 +8,12 @@ import time
 import cantera as ct
 
 
-def driver(self):
+def driver(args,input_param):
 
     breakpoint()
     
     # collect all of variables from user interface
-    solver_param = solver_functions.solver_parameters_collector(self)
+    solver_param = solver_functions.solver_parameters_collector(args,input_param)
 
     # initialize main states 
     state = solver_functions.initialize_state(solver_param)

@@ -1,96 +1,120 @@
 import numpy as np
 import cantera as ct
-from scipy.optimize import minimize
 
-def solver_parameters_collector(self):
+
+def solver_parameters_collector(args,input_param):
 
     solver_param = {}
 
     ### solver_mode ###
-    if self.fom_mode_checkbox_check_var.get() == True:
-
+    if input_param['solver_mode'] == 'FOM':
+    
         solver_param['solver_mode'] = 'FOM'
 
-    elif self.rom_mode_checkbox_check_var.get() == True:
+    elif input_param['solver_mode'] == 'ROM':
 
-        solver_param['solver_mode'] = 'ROM'
-        solver_param['pod_energy'] = float(self.energy_capture_entry_var.get())
-        solver_param['init_training_win'] = self.training_window_entry_var.get()
+        solver_param['solver_mode']           = 'ROM'
+        solver_param['pod_energy']            = float(input_param['pod_energy'])
+        solver_param['rom_method']            = input_param['rom_method']     
+        solver_param['hyper']                 = eval(input_param['hyper'])         
+        solver_param['sampling_method']       = input_param['hyper_method']
 
-    elif self.adaptive_rom_mode_checkbox_check_var.get() == True:
+    elif  input_param['solver_mode'] == 'Adaptive ROM':
 
-        solver_param['solver_mode'] = 'Adaptive ROM'
-        solver_param['adaptive_rom_method'] = self.adaptive_rom_method_entry_var.get()
-        solver_param['pod_energy'] = float(self.energy_capture_entry_var.get())
-        solver_param['init_training_win'] = self.training_window_entry_var.get()
-        solver_param['unsampled_update_freq'] = int(self.unsampled_update_freq_entry_var.get())
+        solver_param['solver_mode']           = 'Adaptive ROM'
+        solver_param['adaptive_rom_method']   = input_param['arom_method']
+        solver_param['pod_energy']            = float(input_param['pod_energy'])
+        solver_param['init_training_win']     = float(input_param['init_training_win'])
+        solver_param['unsampled_update_freq'] = int(input_param['unsampled_update_freq'])
+        solver_param['rom_method']            = input_param['rom_method']     
+        solver_param['hyper']                 = eval(input_param['hyper'])          
+        solver_param['sampling_method']       = input_param['hyper_method']
 
 
-    elif self.hybrid_rom_mode_checkbox_check_var.get() == True:
+    elif solver_param['solver_mode'] == 'Hybrid ROM':
 
-        solver_param['solver_mode'] = 'Hybrid ROM'
-        solver_param['adaptive_rom_method'] = self.adaptive_rom_method_entry_var.get()
-        solver_param['pod_energy'] = float(self.energy_capture_entry_var.get())
-        solver_param['init_training_win'] = self.training_window_entry_var.get()
-        solver_param['unsampled_update_freq'] = int(self.unsampled_update_freq_entry_var.get())
+        solver_param['solver_mode']           = 'Hybrid ROM'
+        solver_param['adaptive_rom_method']   = input_param['arom_method']
+        solver_param['pod_energy']            = float(input_param['pod_energy'])
+        solver_param['init_training_win']     = float(input_param['init_training_win'])
+        solver_param['unsampled_update_freq'] = int(input_param['unsampled_update_freq'])
+        solver_param['rom_method']            = input_param['rom_method']     
+        solver_param['hyper']                 = eval(input_param['hyper'])          
+        solver_param['sampling_method']       = input_param['hyper_method']
         
-    solver_param['rom_method'] = self.rom_method_entry_var.get()
-    solver_param['hyper']      = self.hyper_method_checkbox_check_var.get()
-    solver_param['sampling_method'] = self.hyper_method_entry_var.get()
-
 
     ### time discretization ###
-    solver_param['dt'] = float(self.dt_entry_var.get())
-    solver_param['num_step'] = int(self.num_step_entry_var.get())
-    solver_param['time_scheme'] = self.time_scheme_entry_var.get()
-    solver_param['dual_time'] = self.dt_entry_var.get()
-    solver_param['res_tol'] = float(self.dt_entry_var.get())
+    solver_param['dt']          = float(input_param['dt'])
+    solver_param['num_step']    = int(input_param['num_steps'])
+    solver_param['time_scheme'] = input_param['time_scheme']
+
 
     ### space discretization ###
-    solver_param['x_initial'] = float(self.mesh_x_init_entry_var.get())
-    solver_param['x_final'] = float(self.mesh_x_final_entry_var.get())
-    solver_param['cell_number'] = int(self.cell_number_entry_var.get())
+    solver_param['x_initial']   = float(input_param['x_initial'])
+    solver_param['x_final']     = float(input_param['x_final'])
+    solver_param['cell_number'] = int(input_param['cell_number'])
 
-    ### inlet BC ###
-    # solver_param['press_inlet'] = float(self.inlet_press_entry_var.get())
-    # solver_param['temp_inlet'] = float(self.inlet_temp_entry_var.get())
-    # solver_param['vel_inlet'] = float(self.inlet_vel_entry_var.get())
-    # solver_param['rho_inlet'] = float(self.inlet_rho_entry_var.get())
-    # solver_param['mass_frac_inlet'] = self.inlet_mass_frac_entry_var.get()
+    ### BC data ###
+    solver_param['bc_data'] = np.empty((5,2) , dtype='object')
+    
+    solver_param['bc_data'][0,0] = input_param['rho_inlet']
+    solver_param['bc_data'][1,0] = input_param['vel_inlet']
+    solver_param['bc_data'][2,0] = input_param['press_inlet']
+    solver_param['bc_data'][3,0] = input_param['temp_inlet']
+    solver_param['bc_data'][4,0] = input_param['mass_frac_inlet']
 
-    # ### outlet BC ###
-    # solver_param['press_outlet'] = float(self.outlet_press_entry_var.get())
-    # solver_param['temp_outlet'] = float(self.outlet_temp_entry_var.get())
-    # solver_param['vel_outlet'] = float(self.outlet_vel_entry_var.get())
-    # solver_param['rho_outlet'] = float(self.outlet_rho_entry_var.get())
-    # solver_param['mass_frac_outlet'] = self.outlet_mass_frac_entry_var.get()
 
-    solver_param['non_reflective_bc'] = True
+    solver_param['bc_data'][0,1] = input_param['rho_outlet']
+    solver_param['bc_data'][1,1] = input_param['vel_outlet']
+    solver_param['bc_data'][2,1] = input_param['press_outlet']
+    solver_param['bc_data'][3,1] = input_param['temp_outlet']
+    solver_param['bc_data'][4,1] = input_param['mass_frac_outlet']
+
+    ### ic data ###
+
+    if 'ic_path' in input_param:
+
+        solver_param['ic_data'] = np.load(input_param['ic_path'])
+
+    else:
+
+        # Number of rows
+        num_rows = len(eval(input_param['x_interval_ic']))
+
+        # Structuring the data
+        solver_param['ic_data'] = []
+
+        for i in range(num_rows):
+
+            row = [str(eval(input_param['x_interval_ic'])[i][0]),
+                   str(eval(input_param['x_interval_ic'])[i][1]),
+                   str(eval(input_param['rho_ic'])[i]),
+                   str(eval(input_param['vel_ic'])[i]),
+                   str(eval(input_param['press_ic'])[i]),
+                   str(eval(input_param['temp_ic'])[i]),
+                   str(eval(input_param['mass_frac_ic'])[i])
+                   ]
+            
+            solver_param['ic_data'].append(row)
 
     ### physics ###
-    solver_param['gas_model']   = self.gas_model_entry_var.get()
-    solver_param['gamma']       = 1.4 
-    solver_param['flux_scheme'] = self.flux_scheme_entry_var.get()
-    solver_param['limiter']     = self.limiter_checkbox_check_var.get()
-    solver_param['viscous_flag']= self.viscous_checkbox_check_var.get() 
+    solver_param['gas_model']     =  input_param['gas_model']
+    solver_param['gamma']         =  1.4 
+    solver_param['flux_scheme']   =  input_param['flux_scheme']
+    solver_param['limiter']       =  eval(input_param['limiter'])
+    solver_param['viscous_flag']  =  eval(input_param['viscous'])
 
     ### visualization ###
-    solver_param['variable1']           = self.visual_1_option_entry_var.get()
-    solver_param['variable2']           = self.visual_2_option_entry_var.get()
-    solver_param['variable3']           = self.visual_3_option_entry_var.get()
-    solver_param['variable4']           = self.visual_4_option_entry_var.get()
-    solver_param['vis_update_interval'] = int(self.visual_update_interval_entry_var.get())
-    solver_param['plot_fom_flag']       = self.fom_plot_check_var.get()
+    solver_param['variable1']           = input_param['variable1']
+    solver_param['variable2']           = input_param['variable2']
+    solver_param['variable3']           = input_param['variable3']
+    solver_param['variable4']           = input_param['variable4']
+    solver_param['vis_update_interval'] = int(input_param['update_interval'])
+    solver_param['plot_fom_flag']       = eval(input_param['plot_fom'])
     
-    ### ic data ###
-    solver_param['ic_data']   = self.ic_data
-
-    ### bc data ###
-    solver_param['bc_data']   = self.bc_data
-
     ### Input Directory ###
-    solver_param['working_dir']         = self.working_dir_entry_var.get()
-    solver_param['FOM_result_dir']      = self.FOM_file_entry_var.get()
+    solver_param['working_dir']         = args.working_directory
+    solver_param['FOM_result_dir']      = input_param['fom_results_dir']
 
     ### Some Basic Calculations ###
 
@@ -106,8 +130,7 @@ def solver_parameters_collector(self):
 
     else:
 
-        # solver_param['num_species']   = len(eval(solver_param['ic_data'][0][6]))
-        solver_param['num_species']   = 9
+        solver_param['num_species']   = len(eval(solver_param['ic_data'][0][6]))
         solver_param['num_prim_var']  = 4 + solver_param['num_species']
         solver_param['num_state_var'] = solver_param['num_prim_var'] - 1 # no temp
     
@@ -168,10 +191,10 @@ def ic_generator(solver_param,state):
 
             indx = np.where(  (x >= float(solver_param['ic_data'][region][0]))  &  (x <= float(solver_param['ic_data'][region][1]))  )
         
-            rho[indx] = eval(solver_param['ic_data'][region][5])
-            vx [indx] = eval(solver_param['ic_data'][region][4])
-            P  [indx] = eval(solver_param['ic_data'][region][2])
-            T  [indx] = eval(solver_param['ic_data'][region][3])
+            rho[indx] = eval(solver_param['ic_data'][region][2])
+            vx [indx] = eval(solver_param['ic_data'][region][3])
+            P  [indx] = eval(solver_param['ic_data'][region][4])
+            T  [indx] = eval(solver_param['ic_data'][region][5])
 
         state['Q_prim'] = np.vstack((rho,vx,P,T)).ravel()
 
