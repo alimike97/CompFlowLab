@@ -551,65 +551,35 @@ def multi_snapshot_adaptive_rom_progress(solver_param,rom_param,state,iter):
             # Find FOM at sampled points
             sampling_adapt_freq = solver_param['unsampled_update_freq']
 
-            # Run a FOM at unsampled points at a specific freq
-
+            # Run a FOM at whole domain to update unsampled points at a specific freq
+            # if (sampling_adapt_freq != 0 and solver_param['iter'] % sampling_adapt_freq == 0) or (iter == int(solver_param['init_training_win'])+1):
             if (sampling_adapt_freq != 0 and solver_param['iter'] % sampling_adapt_freq == 0):
 
                 Q_bar_star_old = state['Q_bar']
+                solver_param['hyper'] = False
                 solver_param['dt'] = sampling_adapt_freq * solver_param['dt']
-
-                # temporarily changing indicies to only unsampled indicies
-                original_S_indx_user   = rom_param['S_indx_user']
-                original_S_indx_solver = rom_param['S_indx_solver']
-
-                S_star_indx_user , S_star_indx_solver = sampled2unsampled_indx_converter(rom_param['S_indx_user'],
-                                                                                         solver_param['num_state_var'],
-                                                                                         solver_param['cell_number'])
-                
-                rom_param['S_indx_user']   = S_star_indx_user
-                rom_param['S_indx_solver'] = S_star_indx_solver
 
                 state['Q_cons'] = Q_bar_star_old
 
-                Q_bar_star_old_int = solver_functions.solver_eliminate_ghost(solver_param,Q_bar_star_old)
-
-                # make a big jump only at unsampled points from n-zs to n
                 state = solver_functions.residual_calculator(solver_param,rom_param,state)
-                state['Q_cons']    = Q_bar_star_old_int[rom_param['S_indx_solver']]
-                state              = time_integrator_functions.advance_time(solver_param,state)
-                Q_bar_new_unsampled= state['Q_cons']
+                state = time_integrator_functions.advance_time(solver_param,state)
 
-                # changing setup to original configuration
-                rom_param['S_indx_user']    = original_S_indx_user   
-                rom_param['S_indx_solver']  = original_S_indx_solver
+                Q_bar_star_new = state['Q_cons']
+                Q_bar_star_new_solver_int = solver_functions.solver_eliminate_ghost(solver_param,Q_bar_star_new)
 
-                # make a small jump only at sampled points from n-1 to n
-                state['Q_cons']    = Q_tilda_old
-                state              = solver_functions.residual_calculator(solver_param,rom_param,state)
-                state['Q_cons']    = Q_tilda_old_solver_int[rom_param['S_indx_solver']]
-                state              = time_integrator_functions.advance_time(solver_param,state)
-                Q_bar_new_sampled  = state['Q_cons']
+                state['Q_bar'] = Q_bar_star_new
 
-                # combine sampled and unsampled points data and create the new q bar
-                Q_bar_new                         = np.zeros_like(Q_bar_star_old_int)     
-                Q_bar_new[S_star_indx_solver]     = Q_bar_new_unsampled  
-                Q_bar_new[original_S_indx_solver] = Q_bar_new_sampled 
-
-                state['Q_bar'] = solver_functions.solver_add_ghost(solver_param['cell_number'],solver_param['num_state_var'],Q_bar_new)
-
-                Q_bar_new_sampling   = Q_bar_new[rom_param['S_indx_solver']]
-                Q_bar_new_solver_int = Q_bar_new     
-
-                # returning to original time step
+                Q_bar_new_sampling = Q_bar_star_new_solver_int[rom_param['S_indx_solver']]
+                Q_bar_new_solver_int = Q_bar_star_new_solver_int
+                solver_param['hyper'] = True
                 solver_param['dt'] = solver_param['dt'] / sampling_adapt_freq
 
-                # creating a new q_r (only needed for single step basis adaptation)
-                Q_red_new = rom_param['basis'].T @ Q_bar_new
+                Q_red_new = rom_param['basis'].T @ Q_bar_star_new_solver_int
 
-                # adapt the basis
                 rom_param , F = adapt_basis(solver_param,state,rom_param,Q_bar_new_solver_int,iter,Q_red_new,Q_tilda_predict_solver_int=0)
             
                 # Find Q tilda (ROM) with new basis(correction)
+
                 rom_param['q_red0'] = np.linalg.pinv(rom_param['basis']) @ F [:,-1]
 
                 Q_tilda_correct_solver_int= q_ref + (denormalizor * (rom_param['basis'] @ rom_param['q_red0'] ))
@@ -629,6 +599,7 @@ def multi_snapshot_adaptive_rom_progress(solver_param,rom_param,state,iter):
                 Q_bar_new_sampling = state['Q_cons']
 
                 # Estimate FOM at unsampled points using old basis (DEIM Equation)
+
                 decen_norm_Q_bar_new_sampling           = normalizor[rom_param['S_indx_solver']]*(Q_bar_new_sampling-q_ref[rom_param['S_indx_solver']])
                 C                                       = np.linalg.pinv(rom_param['basis'][rom_param['S_indx_solver']]) @ decen_norm_Q_bar_new_sampling
                 Q_bar_new_solver_int                    = q_ref + (denormalizor * (rom_param['basis'] @ C ))

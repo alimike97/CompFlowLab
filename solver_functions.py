@@ -31,7 +31,7 @@ def solver_parameters_collector(args,input_param):
         solver_param['sampling_method']       = input_param['hyper_method']
 
 
-    elif solver_param['solver_mode'] == 'Hybrid ROM':
+    elif input_param['solver_mode'] == 'Hybrid ROM':
 
         solver_param['solver_mode']           = 'Hybrid ROM'
         solver_param['adaptive_rom_method']   = input_param['arom_method']
@@ -130,7 +130,7 @@ def solver_parameters_collector(args,input_param):
 
     else:
 
-        solver_param['num_species']   = len(eval(solver_param['ic_data'][0][6]))
+        solver_param['num_species']   = len(solver_param['ic_data'][:,0])-4
         solver_param['num_prim_var']  = 4 + solver_param['num_species']
         solver_param['num_state_var'] = solver_param['num_prim_var'] - 1 # no temp
     
