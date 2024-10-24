@@ -1592,6 +1592,9 @@ def first_order_roe_viscous_flux_calculator(solver_param,rom_param,state):
 def second_order_roe_flux_calculator(solver_param,rom_param,state):
 
     if solver_param['gas_model'] == 'Non-Reacting Air':
+
+        state            = cons2prim_converter(solver_param,state)
+        state            = update_ghost_cell(solver_param,state)
     
         Q_cons           = state['Q_cons']
         Q_prim           = state['Q_prim']

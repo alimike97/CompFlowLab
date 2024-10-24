@@ -1,6 +1,6 @@
 # solver setup
 
-solver_mode 		= FOM
+solver_mode 		= Adaptive ROM
 rom_method  		= Galerkin
 arom_method		    = Direct Adapt
 pod_energy  		= 99.999
@@ -11,7 +11,7 @@ unsampled_update_freq 	= 10
 fom_results_dir		= ""
 
 # time discretization
-dt            = 1e-4
+dt            = 5e-5
 num_steps     = 1500
 time_scheme   = Explicit - FD Euler
 
