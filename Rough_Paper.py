@@ -19,8 +19,8 @@ import numpy as np
 # fom_super_small = np.load(r"C:\GIT_Fork\ROMify\examples\classic_shock_tube\FOM 30000 snapshots Explicit - FD Euler prim_dt_1en6.npy")
 
 
-fom_roe1           = np.load(r"C:\GIT_Fork\ROMify\examples\classic_shock_tube\first_order_roe_FOM 1500 snapshots Explicit - SSPRK2 prim.npy")
-fom_roe2           = np.load(r"C:\GIT_Fork\ROMify\examples\classic_shock_tube\second_order_roe_FOM 1500 snapshots Explicit - SSPRK2 prim.npy")
+fom_roe1           = np.load(r"C:\Users\mohag\Desktop\iteration11500_prim.npy")
+# fom_roe2           = np.load(r"C:\GIT_Fork\ROMify\examples\classic_shock_tube\second_order_roe_FOM 1500 snapshots Explicit - SSPRK2 prim.npy")
 # arom_original = np.load(r"C:\Users\mohag\OneDrive - University of Kansas\KU - Aerospace PhD\Research Related\error_analysis_of_ROM\shock_tube_initial_arom\Adaptive ROM 3000 snapshots Explicit - FD Euler GalerkinQDEIM cons.npy")
 # arom_improved = np.load(r"C:\Users\mohag\OneDrive - University of Kansas\KU - Aerospace PhD\Research Related\error_analysis_of_ROM\shock_tube_improved_arom\Adaptive ROM 3000 snapshots Explicit - FD Euler GalerkinQDEIM cons.npy")
 
@@ -74,7 +74,7 @@ fom_roe2           = np.load(r"C:\GIT_Fork\ROMify\examples\classic_shock_tube\se
 
 fig , ax = plt.subplots(2,2)
 
-fig.set_size_inches(15,6)
+# fig.set_size_inches(15,6)
 
 # # fig.suptitle('Adaptive ROM dt=5e-5 vs. FOM dt=5e-4')
 
@@ -123,80 +123,80 @@ x=np.linspace(0,0.12,500)
 # new_error = np.zeros(3000)
 
 
-for iter in range(0,1500,50):
+# for iter in range(0):
 
     # s_indx = np.nonzero(samples[:,iter])[0]
 
-    ax[0,0].cla()
-    ax[1,0].cla()
-    ax[0,1].cla()
-    ax[1,1].cla()
+ax[0,0].cla()
+ax[1,0].cla()
+ax[0,1].cla()
+ax[1,1].cla()
 
 
-    rho1    = fom_roe1[0,:,iter].ravel()
-    u1      = fom_roe1[1,:,iter].ravel()
-    P1      = fom_roe1[2,:,iter].ravel()
-    T1      = fom_roe1[3,:,iter].ravel()
+rho1    = fom_roe1[-1,:].ravel()
+u1      = fom_roe1[1,:].ravel()
+P1      = fom_roe1[2,:].ravel()
+T1      = fom_roe1[3,:].ravel()
 
-    rho2    = fom_roe2[0,:,iter].ravel()
-    u2      = fom_roe2[1,:,iter].ravel()
-    P2      = fom_roe2[2,:,iter].ravel()
-    T2      = fom_roe2[3,:,iter].ravel()
+# rho2    = fom_roe2[0,:,iter].ravel()
+# u2      = fom_roe2[1,:,iter].ravel()
+# P2      = fom_roe2[2,:,iter].ravel()
+# T2      = fom_roe2[3,:,iter].ravel()
 
 #     P_fom_super_small    = fom_super_small[2,:,counter2].ravel()
-    # P_fom_small    = fom_small[2,:,iter].ravel()
+# P_fom_small    = fom_small[2,:,iter].ravel()
 #     P_arom_small   = arom[2,:,iter].ravel()
 #     P_fom_large    = fom_large[2,:,counter].ravel()
 
 #     ax.plot(x,P_fom_super_small      ,label='FOM-super-small')
-    # ax.plot(x,P_fom_small      ,label='FOM-small')
+# ax.plot(x,P_fom_small      ,label='FOM-small')
 #     ax.plot(x,P_arom_small     ,label='AROM')
 #     ax.plot(x,P_fom_large      ,label='FOM_large')
-    ax[0,0].plot(x,rho1      ,color='tab:blue'   ,label='1st Order Roe')
-    ax[1,0].plot(x,u1         ,color='tab:green' ,label='1st Order Roe')
-    ax[0,1].plot(x,P1         ,color='tab:orange',label='1st Order Roe')
-    ax[1,1].plot(x,T1         ,color='tab:red'   ,label='1st Order Roe')
+ax[0,0].plot(x,rho1      ,color='tab:blue'   ,label='1st Order Roe')
+ax[1,0].plot(x,u1         ,color='tab:green' ,label='1st Order Roe')
+ax[0,1].plot(x,P1         ,color='tab:orange',label='1st Order Roe')
+ax[1,1].plot(x,T1         ,color='tab:red'   ,label='1st Order Roe')
 
-    ax[0,0].plot(x,rho2      ,linestyle='--',color='tab:blue'  ,label='2nd Order Roe')
-    ax[1,0].plot(x,u2        ,linestyle='--',color='tab:green' ,label='2nd Order Roe')
-    ax[0,1].plot(x,P2        ,linestyle='--',color='tab:orange',label='2nd Order Roe')
-    ax[1,1].plot(x,T2        ,linestyle='--',color='tab:red'   ,label='2nd Order Roe')
+# ax[0,0].plot(x,rho2      ,linestyle='--',color='tab:blue'  ,label='2nd Order Roe')
+# ax[1,0].plot(x,u2        ,linestyle='--',color='tab:green' ,label='2nd Order Roe')
+# ax[0,1].plot(x,P2        ,linestyle='--',color='tab:orange',label='2nd Order Roe')
+# ax[1,1].plot(x,T2        ,linestyle='--',color='tab:red'   ,label='2nd Order Roe')
 
-    # ax[0,0].scatter(x[s_indx] , rho[s_indx]      ,color='black')
-    # ax[1,0].scatter(x[s_indx] , u[s_indx]        ,color='black')
-    # ax[0,1].scatter(x[s_indx] , a_P[s_indx]      ,color='black')
-    # ax[1,1].scatter(x[s_indx] , a_T[s_indx]      ,color='black')
+# ax[0,0].scatter(x[s_indx] , rho[s_indx]      ,color='black')
+# ax[1,0].scatter(x[s_indx] , u[s_indx]        ,color='black')
+# ax[0,1].scatter(x[s_indx] , a_P[s_indx]      ,color='black')
+# ax[1,1].scatter(x[s_indx] , a_T[s_indx]      ,color='black')
 
-    ax[0,0].legend()
-    ax[1,0].legend()
-    ax[0,1].legend()
-    ax[1,1].legend()
+ax[0,0].legend()
+ax[1,0].legend()
+ax[0,1].legend()
+ax[1,1].legend()
 
 #     ax.set_xlabel('x[m]')
-    # ax[0,0].set_xlabel('x[m]')
-    # ax[1,0].set_xlabel('x[m]')
-    # ax[0,1].set_xlabel('x[m]')
-    # ax[1,1].set_xlabel('x[m]')
+# ax[0,0].set_xlabel('x[m]')
+# ax[1,0].set_xlabel('x[m]')
+# ax[0,1].set_xlabel('x[m]')
+# ax[1,1].set_xlabel('x[m]')
 
-    # ax[0,0].set_ylabel('Heat Release[W/m3]')
-    # ax[1,0].set_ylabel('Velocity[m/s]')
-    # ax[0,1].set_ylabel('Pressure[Pa]')
-    # ax[1,1].set_ylabel('Temperature[K]')
+# ax[0,0].set_ylabel('Heat Release[W/m3]')
+# ax[1,0].set_ylabel('Velocity[m/s]')
+# ax[0,1].set_ylabel('Pressure[Pa]')
+# ax[1,1].set_ylabel('Temperature[K]')
 #     ax.set_ylabel('P')
 
-    # ax[0,1].set_ylim(95e3,107e3)
-    # ax[1,0].set_ylim(-10,10)
+# ax[0,1].set_ylim(95e3,107e3)
+# ax[1,0].set_ylim(-10,10)
 
 #     counter = counter + 1
 #     counter2 = counter2 + 100
 
-    plt.pause(1e-6)
-    
+# plt.pause(1e-6)
+
 
 #     # q_replica = qref+(denorm*(basis@(basis.T@(norm*(q-qref)))))
 
 
-    print(iter)
+# print(iter)
 
     # arom_original_data = arom_original[:,:,iter].ravel()
     # arom_improved_data = arom_improved[:,:,iter].ravel()

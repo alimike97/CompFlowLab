@@ -59,7 +59,7 @@ def driver(args,solver_param):
         visual_param        = visualization_functions.initial_plot(axs,solver_param,visual_param)
 
     # create folders for storing data
-    dir_results = solver_param['working_dir'] + '\\' + solver_param['solver_mode'] + '_results'
+    dir_results = os.path.join(solver_param['working_dir'], f"{solver_param['solver_mode']}_results")
 
     # Check if the directory exists
     if os.path.exists(dir_results):
@@ -73,14 +73,14 @@ def driver(args,solver_param):
     # create rom related folders if we are running rom
     if solver_param['solver_mode'] != 'FOM':
 
-        os.makedirs(dir_results+'\\'+'cons_prim'     )
-        os.makedirs(dir_results+'\\'+'basis'         )
-        os.makedirs(dir_results+'\\'+'samples_user'  )
-        os.makedirs(dir_results+'\\'+'samples_solver')
-        os.makedirs(dir_results+'\\'+'q_r'           )
-        os.makedirs(dir_results+'\\'+'q_ref'         )
-        os.makedirs(dir_results+'\\'+'norm'          )
-        os.makedirs(dir_results+'\\'+'denorm'        )
+        os.makedirs( os.path.join(dir_results, 'cons_prim')     )
+        os.makedirs( os.path.join(dir_results, 'basis')         )
+        os.makedirs( os.path.join(dir_results, 'samples_user')  )
+        os.makedirs( os.path.join(dir_results, 'samples_solver'))
+        os.makedirs( os.path.join(dir_results, 'q_r')           )
+        os.makedirs( os.path.join(dir_results, 'q_ref')         )
+        os.makedirs( os.path.join(dir_results, 'norm')          )
+        os.makedirs( os.path.join(dir_results, 'denorm')        )
 
 
     # begin simulation

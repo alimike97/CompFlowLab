@@ -1,3 +1,4 @@
+import os
 import time
 import numpy as np
 import scipy as sc
@@ -125,20 +126,20 @@ def precomputer(solver_param,state):
 
 def assemble_snapshots(solver_param):
 
-    dir_results = solver_param['working_dir'] + '\\' + solver_param['solver_mode'] + '_results' + '\\' + 'cons_prim'
+    dir_results = os.path.join(solver_param['working_dir'], f"{solver_param['solver_mode']}_results",'cons_prim')
 
     if solver_param['solver_mode'] == 'ROM':
 
-       dir_results = solver_param['working_dir'] + '\\' + 'FOM' + '_results'
+        dir_results = os.path.join(solver_param['working_dir'], 'FOM_results')
 
-    if solver_param['solver_mode'] == 'Adaptive ROM' or 'Hybrid ROM':
+    if solver_param['solver_mode'] in ['Adaptive ROM', 'Hybrid ROM']:
 
         solver_param['fom_results_max_iter'] = solver_param['iter']
 
-    sample_cons_snapshot = np.load(dir_results+'\\'+ 'iteration0_cons.npy')
+    sample_cons_snapshot = np.load(os.path.join(dir_results, '0iteration_cons.npy'))
     sample_cons_shape    = np.shape(sample_cons_snapshot)
 
-    sample_prim_snapshot = np.load(dir_results+'\\'+ 'iteration0_prim.npy')
+    sample_prim_snapshot = np.load(os.path.join(dir_results, '0iteration_prim.npy'))
     sample_prim_shape    = np.shape(sample_prim_snapshot)
 
     training_data_cons = np.zeros((sample_cons_shape[0],sample_cons_shape[1],solver_param['fom_results_max_iter']))
@@ -149,11 +150,11 @@ def assemble_snapshots(solver_param):
     # bring all of snapshots into one matrix
     for i in range(solver_param['fom_results_max_iter']):
 
-        file_name_cons = 'iteration'+str(i)+'_cons.npy'
-        file_name_prim = 'iteration'+str(i)+'_prim.npy'
+        file_name_cons = str(i)+'iteration'+'_cons.npy'
+        file_name_prim = str(i)+'iteration'+'_prim.npy'
 
-        training_data_cons[:,:,i] = np.load(dir_results+'\\'+ file_name_cons)
-        training_data_prim[:,:,i] = np.load(dir_results+'\\'+ file_name_prim)
+        training_data_cons[:, :, i] = np.load(os.path.join(dir_results, file_name_cons))
+        training_data_prim[:, :, i] = np.load(os.path.join(dir_results, file_name_prim))
 
     return training_data_cons , training_data_prim
 
@@ -439,12 +440,15 @@ def single_snapshot_adaptive_rom_progress(solver_param,rom_param,state,iter):
             state = solver_functions.residual_calculator(solver_param,rom_param,state)
             state = time_integrator_functions.advance_time(solver_param,rom_param,state)
 
-            # save the results of current state before doing the precomputations
-            dir_results = solver_param['working_dir'] + '\\' + solver_param['solver_mode'] + '_results' + '\\' 'cons_prim'
-            iter        = solver_param['iter']
-            save_title  = 'iteration' + str(iter)
-            np.save( dir_results + '\\' + save_title + '_cons.npy' ,state['cons_results_save'])
-            np.save( dir_results + '\\' + save_title + '_prim.npy' ,state['prim_results_save'])
+            # Save the results of current state before doing the precomputations
+            dir_results = os.path.join(solver_param['working_dir'], f"{solver_param['solver_mode']}_results", 'cons_prim')
+
+            iter = solver_param['iter']
+
+            save_title = str(iter)+'iteration'
+
+            np.save(os.path.join(dir_results, f"{save_title}_cons.npy"), state['cons_results_save'])
+            np.save(os.path.join(dir_results, f"{save_title}_prim.npy"), state['prim_results_save'])
 
             rom_param = precomputer(solver_param,state)
             rom_param = sample_point_finder(solver_param,rom_param)
@@ -562,12 +566,15 @@ def multi_snapshot_adaptive_rom_progress(solver_param,rom_param,state,iter):
             state = solver_functions.residual_calculator(solver_param,rom_param,state)
             state = time_integrator_functions.advance_time(solver_param,rom_param,state)
 
-            # save the results of current state before doing the precomputations
-            dir_results = solver_param['working_dir'] + '\\' + solver_param['solver_mode'] + '_results' + '\\' 'cons_prim'
-            iter        = solver_param['iter']
-            save_title  = 'iteration' + str(iter)
-            np.save( dir_results + '\\' + save_title + '_cons.npy' ,state['cons_results_save'])
-            np.save( dir_results + '\\' + save_title + '_prim.npy' ,state['prim_results_save'])
+            # Save the results of current state before doing the precomputations
+            dir_results = os.path.join(solver_param['working_dir'], f"{solver_param['solver_mode']}_results", 'cons_prim')
+
+            iter = solver_param['iter']
+            
+            save_title = str(iter)+'iteration'
+
+            np.save(os.path.join(dir_results, f"{save_title}_cons.npy"), state['cons_results_save'])
+            np.save(os.path.join(dir_results, f"{save_title}_prim.npy"), state['prim_results_save'])
 
             rom_param = precomputer(solver_param,state)
             rom_param = sample_point_finder(solver_param,rom_param)
