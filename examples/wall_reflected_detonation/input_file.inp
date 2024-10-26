@@ -8,7 +8,7 @@ hyper	    		    = True
 hyper_method		    = QDEIM
 init_training_win 	    = 10
 unsampled_update_freq 	= 10
-fom_results_dir		    = ""
+fom_results_max_iter    = ""
 
 #cfl = 0.0025
 #t = 250 micro-sec
@@ -66,6 +66,10 @@ variable3 	    = Velocity
 variable4 	    = Heat Release
 update_interval = 1000
 plot_fom	    = False
+
+
+# Saving
+save_interval = 100
 
 
 # Profiling

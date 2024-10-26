@@ -1,3 +1,4 @@
+
 import solver_functions
 import time_integrator_functions
 import visualization_functions
@@ -6,6 +7,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import cantera as ct
+import os
+import shutil
 
 
 def driver(args,solver_param):
@@ -18,9 +21,6 @@ def driver(args,solver_param):
     # get the initial condition
 
     state = solver_functions.ic_generator(solver_param,state)
-
-    # add ghost cells
-    # state = solver_functions.update_ghost_cell(solver_param,state)
 
     # convert prim to cons
     state = solver_functions.prim2cons_converter(solver_param, state)
@@ -58,6 +58,31 @@ def driver(args,solver_param):
         
         visual_param        = visualization_functions.initial_plot(axs,solver_param,visual_param)
 
+    # create folders for storing data
+    dir_results = solver_param['working_dir'] + '\\' + solver_param['solver_mode'] + '_results'
+
+    # Check if the directory exists
+    if os.path.exists(dir_results):
+
+        # Remove the entire directory
+        shutil.rmtree(dir_results)
+
+    # Create a new directory
+    os.makedirs(dir_results)
+
+    # create rom related folders if we are running rom
+    if solver_param['solver_mode'] != 'FOM':
+
+        os.makedirs(dir_results+'\\'+'cons_prim'     )
+        os.makedirs(dir_results+'\\'+'basis'         )
+        os.makedirs(dir_results+'\\'+'samples_user'  )
+        os.makedirs(dir_results+'\\'+'samples_solver')
+        os.makedirs(dir_results+'\\'+'q_r'           )
+        os.makedirs(dir_results+'\\'+'q_ref'         )
+        os.makedirs(dir_results+'\\'+'norm'          )
+        os.makedirs(dir_results+'\\'+'denorm'        )
+
+
     # begin simulation
     start_time = time.time()
     state['time'] = 0
@@ -92,26 +117,23 @@ def driver(args,solver_param):
     
         state['time'] = state['time'] + solver_param['dt']
 
-        print('Iteration: ' + str(iter+1))
-
-        state['cons_results_save'][:,:,iter] = solver_functions.results_solver2user_converter(solver_param['num_state_var'],solver_param['cell_number'],[state['Q_cons']])[:,2:-2]
+        # prepare data to save
+        state['cons_results_save'] = solver_functions.results_solver2user_converter(solver_param['num_state_var'],solver_param['cell_number'],[state['Q_cons']])[:,2:-2]
         
         if solver_param['gas_model'] == 'Non-Reacting Air':
 
-            state['prim_results_save'][:,:,iter] = solver_functions.results_solver2user_converter(solver_param['num_prim_var'],solver_param['cell_number'],[state['Q_prim']])[:,2:-2]
+            state['prim_results_save'] = solver_functions.results_solver2user_converter(solver_param['num_prim_var'],solver_param['cell_number'],[state['Q_prim']])[:,2:-2]
 
         else :
             
-            state['prim_results_save'][:-1,:,iter] = solver_functions.results_solver2user_converter(solver_param['num_prim_var'],solver_param['cell_number'],[state['Q_prim']])[:,2:-2]
-            state['prim_results_save'][-1,:,iter] = state['heat_release'][2:-2]
+            state['prim_results_save'][:-1,:] = solver_functions.results_solver2user_converter(solver_param['num_prim_var'],solver_param['cell_number'],[state['Q_prim']])[:,2:-2]
+            state['prim_results_save'][-1,:]  = state['heat_release'][2:-2]
 
+        # save the data 
 
-        if (solver_param['solver_mode'] != 'FOM' and iter > int(solver_param['init_training_win'])): 
+        if iter % solver_param['save_interval'] == 0:
 
-            state['q_red_save'][:,iter]                                 = rom_param['q_red0']
-            state['basis_save'][:,:,iter]                               = rom_param['basis']
-            state['S_indx_user_save'][rom_param['S_indx_user'],iter]    = rom_param['S_indx_user']
-            state['S_indx_solver_save'][rom_param['S_indx_solver'],iter]= rom_param['S_indx_solver']
+            solver_functions.results_recorder(solver_param,rom_param,state)
 
         if solver_param['visual'] == True:
 
@@ -120,10 +142,7 @@ def driver(args,solver_param):
             
             plt.show(block=False)
 
-        if iter % 1000 == 0:
-
-            solver_functions.results_recorder(solver_param,state)
-
+        print('Iteration: ' + str(iter))
 
 
     end_time = time.time()
@@ -132,9 +151,7 @@ def driver(args,solver_param):
 
     print(f"Elapsed time: {elapsed_time} seconds")
 
-    solver_functions.results_recorder(solver_param,state)
-
-    print('Simulation successfully completed !')
+    print('Simulation successfully completed!')
 
     return state
 

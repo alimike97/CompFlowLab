@@ -45,22 +45,24 @@ rho_ic        = [5.99924,1,5.99924]
 mass_frac_ic  = [[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]]
 
 # gas model
-gas_model   = Non-Reacting Air
-flux_scheme = 2nd Order Roe
-limiter	    = True
-limiter_method = barth 
-viscous	    = False
+gas_model       = Non-Reacting Air
+flux_scheme     = 2nd Order Roe
+limiter	        = True
+limiter_method  = minmod 
+viscous	        = False
 
 # Visualization
 
-visual      = True
-variable1 	= Density
-variable2 	= Pressure
-variable3 	= Velocity
-variable4 	= None
+visual          = True
+variable1 	    = Density
+variable2 	    = Pressure
+variable3 	    = Velocity
+variable4 	    = None
 update_interval = 1
 plot_fom	    = False
 
+# Saving
+save_interval = 100
 
 # Profiling
 

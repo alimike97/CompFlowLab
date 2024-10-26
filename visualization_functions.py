@@ -106,7 +106,7 @@ def initial_plot(axs,solver_param,visual_param):
 
 def in_progress_plot(fig,axs,iter,solver_param,rom_param,state,visual_param):
 
-    prim_results = state['prim_results_save'][:,:,iter]
+    prim_results = state['prim_results_save']
 
     x = solver_param['x']
 
@@ -185,28 +185,28 @@ def in_progress_plot(fig,axs,iter,solver_param,rom_param,state,visual_param):
 
     if solver_param['solver_mode'] == 'ROM' or (solver_param['plot_fom_flag'] == True and iter > int(solver_param['init_training_win'])):
 
-        training_data_prim = rom_param['training_data_prim']
+        training_data_prim = rom_param['training_data_prim'][:,:,iter]
 
-        y12= training_data_prim[visual_var1,:,iter]
-        y22= training_data_prim[visual_var2,:,iter]
-        y32= training_data_prim[visual_var3,:,iter]
-        y42= training_data_prim[visual_var4,:,iter]
+        y12= training_data_prim[visual_var1,:]
+        y22= training_data_prim[visual_var2,:]
+        y32= training_data_prim[visual_var3,:]
+        y42= training_data_prim[visual_var4,:]
 
         if y12.size == 0 : 
 
-            y12 = 0 * training_data_prim[0,:,0]
+            y12 = 0 * training_data_prim[0,:]
 
         if y22.size == 0 : 
 
-            y22 = 0 * training_data_prim[0,:,0]
+            y22 = 0 * training_data_prim[0,:]
 
         if y32.size == 0 : 
 
-            y32 = 0 * training_data_prim[0,:,0]
+            y32 = 0 * training_data_prim[0,:]
 
         if y42.size == 0 : 
 
-            y42 = 0 * training_data_prim[0,:,0]
+            y42 = 0 * training_data_prim[0,:]
 
         plot12 = visual_param['plot12']
         plot22 = visual_param['plot22']

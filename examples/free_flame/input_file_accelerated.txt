@@ -1,55 +1,64 @@
 # solver setup
 
-solver_mode 		= fom
-rom_method  		= galerkin
-pod_energy  		= 99.999
-hyper	    		= true
-hyper_method		= qdeim
-init_training_win 	= 10
+solver_mode 		    = Adaptive ROM
+rom_method  		    = Galerkin
+arom_method		        = Direct Adapt
+pod_energy  		    = 99.999
+hyper	    		    = True
+hyper_method		    = QDEIM
+init_training_win 	    = 10
+unsampled_update_freq 	= 10
+fom_results_max_iter    = ""
 
 # time discretization
 dt            = 1e-8
 num_steps     = 3500
-time_scheme   = explicit_fd_euler
-dual_time     = false
-res_tol       = 1e-5
+time_scheme   = Explicit - FD Euler
+
 
 # space discretization
 x_initial   = 0
 x_final     = 0.01
-
 cell_number = 500 
 
 ic_path = C:/GIT_Fork/ROMify/examples/free_flame/steady_IC_accelerated.npy
 # ic_path = C:/GIT_Fork/ROMify/examples/free_flame/unsteady_IC_accelerated.npy
 
 # inlet BC
-rho_inlet        = extrap
+rho_inlet        = extrapolate
 vel_inlet        = 0.582289
-press_inlet      = extrap
+press_inlet      = extrapolate
 temp_inlet       = 300
 mass_frac_inlet  = [8.62408241e-03, -4.50418926e-19, -8.05978549e-17,1.36881641e-01,-1.83648598e-16, -1.10827066e-15, -1.63931542e-16, -7.94181448e-16 ,8.54494276e-01]
 
 # outlet BC
-rho_outlet        = extrap
-vel_outlet        = extrap
+rho_outlet        = extrapolate
+vel_outlet        = extrapolate
 press_outlet      = 101325
-temp_outlet       = extrap
-mass_frac_outlet  = extrap
+temp_outlet       = extrapolate
+mass_frac_outlet  = extrapolate
 
 # gas model
-gas_model   = H2/Air Combustion
-flux_scheme = roe1
-limiter_method  = barth
-viscosity   = true
+gas_model       = H2/Air Combustion
+flux_scheme     = 1st Order Roe
+limiter	        = False
+limiter_method  = minmod
+viscous	        = True
 
 # Visualization
 
-variable1 	= Density
-variable2 	= Pressure
-variable3 	= Velocity
-variable4 	= None
-update_interval = 1
+visual          = True
+variable1 	    = Density
+variable2 	    = Pressure
+variable3 	    = Velocity
+variable4 	    = Temprature
+update_interval = 100
+plot_fom	    = False
 
 
+# Saving
+save_interval = 100
+
+# Profiling
+profiling	    = False
 

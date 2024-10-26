@@ -11,36 +11,22 @@ def precomputer(solver_param,state):
 
     if solver_param['solver_mode'] == 'ROM':
 
-        training_data_path_cons = solver_param['FOM_result_dir']
-        training_data_path_prim = training_data_path_cons.replace(' cons.npy',' prim.npy')
-
-        training_data_cons      = np.load(training_data_path_cons)
-        training_data_prim      = np.load(training_data_path_prim)
-        first_snapshot          = training_data_cons[:,:,0]        
+        training_data_cons , training_data_prim = assemble_snapshots(solver_param)
+        first_snapshot                          = training_data_cons[:,:,0]        
 
     elif solver_param['solver_mode'] == 'Adaptive ROM':
 
-        iter = solver_param['iter']
+        solver_param['fom_results_max_iter']    = solver_param['iter']
+        training_data_cons , training_data_prim = assemble_snapshots(solver_param)
+        first_snapshot                          = training_data_cons[:,:,-1]
 
-        training_data_cons = state['cons_results_save'][:,:,0:iter]
-        training_data_prim = state['prim_results_save'][:,:,0:iter]
-        first_snapshot     = training_data_cons[:,:,-1]
-        # first_snapshot     = np.mean(training_data_cons,axis=2)
-
-        if solver_param['plot_fom_flag'] == True:
-
-            training_data_path_cons = solver_param['FOM_result_dir']
-            training_data_path_prim = training_data_path_cons.replace(' cons.npy',' prim.npy')
-
-            training_data_prim      = np.load(training_data_path_prim)
 
     elif solver_param['solver_mode'] == 'Hybrid ROM':
 
-        iter = solver_param['iter']
+        solver_param['fom_results_max_iter']    = solver_param['iter']
+        training_data_cons , training_data_prim = assemble_snapshots(solver_param)
+        first_snapshot                          = training_data_cons[:,:,-1]
 
-        training_data_cons = state['cons_results_save'][:,:,0:iter]
-        training_data_prim = state['prim_results_save'][:,:,0:iter]
-        first_snapshot     = training_data_cons[:,:,-1]
 
     POD_energy_limit   = 100-solver_param['pod_energy']
     # first_snapshot     = np.mean(training_data,axis=2)
@@ -84,7 +70,7 @@ def precomputer(solver_param,state):
 
     if solver_param['solver_mode'] == 'Adaptive ROM':
 
-        basis           = V[:,0:-1]
+        basis                        = V[:,0:-1]
 
     else:
 
@@ -113,31 +99,63 @@ def precomputer(solver_param,state):
     rom_param['q_ref']              = q_ref
     rom_param['training_data_prim'] = training_data_prim
 
-    Q_cons_solver = state['Q_cons']
-    Q_cons_user   = solver_functions.results_solver2user_converter(solver_param['num_state_var'],cell_num,Q_cons_solver)
-    Q_cons_interior_user = Q_cons_user[:,2:-2]
+    Q_cons_solver          = state['Q_cons']
+    Q_cons_user            = solver_functions.results_solver2user_converter(solver_param['num_state_var'],cell_num,Q_cons_solver)
+    Q_cons_interior_user   = Q_cons_user[:,2:-2]
     Q_cons_interior_solver = solver_functions.results_user2solver_converter(Q_cons_interior_user) 
-    rom_param['q_red0'] = basis.T @ Q_cons_interior_solver
+    rom_param['q_red0']    = basis.T @ Q_cons_interior_solver
 
     num_consv_var = solver_param['num_state_var']
     
-    S_indx_user   = np.arange(0,solver_param['cell_number'])
-    pcc           = 0
-    S_indx_solver = user2solver_indx_converter(S_indx_user,num_consv_var,solver_param['cell_number'])
+    rom_param['S_indx_user']      = np.arange(0,solver_param['cell_number'])
+    rom_param['S_indx_solver']    = user2solver_indx_converter(rom_param['S_indx_user'],num_consv_var,solver_param['cell_number'])
+    rom_param['hyper_precompute'] = 0
 
-    rom_param['S_indx_user']      = S_indx_user
-    rom_param['S_indx_solver']    = S_indx_solver
-    rom_param['hyper_precompute'] = pcc
+    if (solver_param['solver_mode'] == 'Adaptive ROM' 
+        and solver_param['adaptive_rom_method'] != 'Single-Snapshot'):
 
-    state['q_red_save']        = np.zeros((np.shape(rom_param['q_red0'])[0],solver_param['num_step']))
-    state['basis_save']        = np.zeros((np.shape(rom_param['basis'])[0],np.shape(rom_param['basis'])[1],solver_param['num_step']))
-    state['q_ref_save']        = q_ref
-    state['normalizor_save']   = normalizor
-    state['denormalizor_save'] = denormalizor
-    state['S_indx_user_save']  = np.zeros((np.shape(rom_param['S_indx_user'])[0],solver_param['num_step']))
-    state['S_indx_solver_save']= np.zeros((np.shape(rom_param['S_indx_solver'])[0],solver_param['num_step']))
+        _,basis_num_col = np.shape(rom_param['basis'])
+        window_size = basis_num_col+1
+
+        rom_param['F']        = tall_thin_data
+        rom_param['Q_R']      = np.zeros((basis_num_col,window_size))        
+        rom_param['Q_R'][:,:] = rom_param['q_red0'][:,np.newaxis]
 
     return rom_param
+
+def assemble_snapshots(solver_param):
+
+    dir_results = solver_param['working_dir'] + '\\' + solver_param['solver_mode'] + '_results' + '\\' + 'cons_prim'
+
+    if solver_param['solver_mode'] == 'ROM':
+
+       dir_results = solver_param['working_dir'] + '\\' + 'FOM' + '_results'
+
+    if solver_param['solver_mode'] == 'Adaptive ROM' or 'Hybrid ROM':
+
+        solver_param['fom_results_max_iter'] = solver_param['iter']
+
+    sample_cons_snapshot = np.load(dir_results+'\\'+ 'iteration0_cons.npy')
+    sample_cons_shape    = np.shape(sample_cons_snapshot)
+
+    sample_prim_snapshot = np.load(dir_results+'\\'+ 'iteration0_prim.npy')
+    sample_prim_shape    = np.shape(sample_prim_snapshot)
+
+    training_data_cons = np.zeros((sample_cons_shape[0],sample_cons_shape[1],solver_param['fom_results_max_iter']))
+    training_data_prim = np.zeros((sample_prim_shape[0],sample_prim_shape[1],solver_param['fom_results_max_iter']))
+
+    print('Assembling Snapshots!')
+
+    # bring all of snapshots into one matrix
+    for i in range(solver_param['fom_results_max_iter']):
+
+        file_name_cons = 'iteration'+str(i)+'_cons.npy'
+        file_name_prim = 'iteration'+str(i)+'_prim.npy'
+
+        training_data_cons[:,:,i] = np.load(dir_results+'\\'+ file_name_cons)
+        training_data_prim[:,:,i] = np.load(dir_results+'\\'+ file_name_prim)
+
+    return training_data_cons , training_data_prim
 
 def hyper_precomputer(basis,S_indx_solver):
 
@@ -414,14 +432,25 @@ def single_snapshot_adaptive_rom_progress(solver_param,rom_param,state,iter):
             
             state = solver_functions.residual_calculator(solver_param,rom_param,state)
             state = time_integrator_functions.advance_time(solver_param,rom_param,state)
+            solver_functions.results_recorder(solver_param,rom_param,state)
 
         elif iter == int(solver_param['init_training_win']):
 
             state = solver_functions.residual_calculator(solver_param,rom_param,state)
             state = time_integrator_functions.advance_time(solver_param,rom_param,state)
 
+            # save the results of current state before doing the precomputations
+            dir_results = solver_param['working_dir'] + '\\' + solver_param['solver_mode'] + '_results' + '\\' 'cons_prim'
+            iter        = solver_param['iter']
+            save_title  = 'iteration' + str(iter)
+            np.save( dir_results + '\\' + save_title + '_cons.npy' ,state['cons_results_save'])
+            np.save( dir_results + '\\' + save_title + '_prim.npy' ,state['prim_results_save'])
+
             rom_param = precomputer(solver_param,state)
             rom_param = sample_point_finder(solver_param,rom_param)
+
+            solver_functions.results_recorder(solver_param,rom_param,state)
+
             solver_param['hyper'] = True
             state['Q_bar'] = state['Q_cons']
 
@@ -526,16 +555,28 @@ def multi_snapshot_adaptive_rom_progress(solver_param,rom_param,state,iter):
             
             state = solver_functions.residual_calculator(solver_param,rom_param,state)
             state = time_integrator_functions.advance_time(solver_param,rom_param,state)
+            solver_functions.results_recorder(solver_param,rom_param,state)
 
         elif iter == int(solver_param['init_training_win']):
 
             state = solver_functions.residual_calculator(solver_param,rom_param,state)
             state = time_integrator_functions.advance_time(solver_param,rom_param,state)
 
+            # save the results of current state before doing the precomputations
+            dir_results = solver_param['working_dir'] + '\\' + solver_param['solver_mode'] + '_results' + '\\' 'cons_prim'
+            iter        = solver_param['iter']
+            save_title  = 'iteration' + str(iter)
+            np.save( dir_results + '\\' + save_title + '_cons.npy' ,state['cons_results_save'])
+            np.save( dir_results + '\\' + save_title + '_prim.npy' ,state['prim_results_save'])
+
             rom_param = precomputer(solver_param,state)
             rom_param = sample_point_finder(solver_param,rom_param)
+
+            solver_functions.results_recorder(solver_param,rom_param,state)
+
             solver_param['hyper'] = True
             state['Q_bar'] = state['Q_cons']
+
 
     else:   
 
@@ -648,17 +689,9 @@ def adapt_basis(solver_param,state,rom_param,Q_bar_new_solver_int,iter,Q_red_new
         
         window_size = basis_num_col+1
 
-        snapshot_to_taken = np.arange(iter-window_size+1,iter)
-
-        F  = np.zeros((basis_num_row,window_size))
-
-        for indx in range(window_size-1):
-            
-            # past snapshots
-            snapshot_temp_int = solver_functions.results_user2solver_converter(state['cons_results_save'][:,:,snapshot_to_taken[indx]])
-            F [:,indx]          = (snapshot_temp_int-q_ref)*normalizor
-
-
+        # roll the training window to the left
+        F   = np.roll(rom_param['F']   , shift=-1,axis=1)
+        
         # future snapshot
         F [:,-1]          = (Q_bar_new_solver_int-q_ref)*normalizor
 
@@ -685,62 +718,27 @@ def adapt_basis(solver_param,state,rom_param,Q_bar_new_solver_int,iter,Q_red_new
 
     elif solver_param['adaptive_rom_method'] == 'Direct Adapt':
 
-        # Create a matrix of snapshots with results from past and q bar
-
-        basis_num_row,basis_num_col = np.shape(rom_param['basis'])
-        window_size = basis_num_col+1
-
-        snapshot_to_taken = np.arange(iter-window_size+1,iter)
-
-        F  = np.zeros((basis_num_row,window_size))
-        Q_R = np.zeros((basis_num_col,window_size))
-
-        for indx in range(window_size-1):
-            
-            # past snapshots
-            snapshot_temp_int = solver_functions.results_user2solver_converter(state['cons_results_save'][:,:,snapshot_to_taken[indx]])
-            F [:,indx]          = (snapshot_temp_int-q_ref)*normalizor
-
-            Q_R[:,indx]         = state['q_red_save'][:,snapshot_to_taken[indx]]
+        # roll the training window to the left
+        F   = np.roll(rom_param['F']   , shift=-1,axis=1)
+        Q_R = np.roll(rom_param['Q_R'] , shift=-1,axis=1)
         
         # future snapshot
         F [:,-1]          = (Q_bar_new_solver_int-q_ref)*normalizor
-
         Q_R[:,-1]         = rom_param['basis'].T @ F [:,-1]
-
-        # Q_R = np.linalg.pinv(rom_param['basis'][rom_param['S_indx_solver'],:]) @ F[rom_param['S_indx_solver'],:]
 
         pinv_Q_R = np.linalg.pinv(Q_R)
 
         rom_param['basis'] = F @ pinv_Q_R
 
-        # rom_param['basis'][rom_param['S_indx_solver'],:] = F[rom_param['S_indx_solver'],:] @ pinv_Q_R
-
-        new_basis = rom_param['basis']
-
         # orthogonalize the basis
-        # rom_param['basis'] , _ = np.linalg.qr(rom_param['basis'])
         rom_param['basis'] , _ , _ = np.linalg.svd(rom_param['basis'],full_matrices=False)
 
 
     elif solver_param['adaptive_rom_method'] == 'Initiative Adapt':
 
-        # Create a matrix of snapshots with results from past and q bar
-
-        basis_num_row,basis_num_col = np.shape(rom_param['basis'])
+        # roll the training window to the left
+        F   = np.roll(rom_param['F']   , shift=-1,axis=1)
         
-        window_size = basis_num_col+1
-
-        snapshot_to_taken = np.arange(iter-window_size+1,iter)
-
-        F  = np.zeros((basis_num_row,window_size))
-
-        for indx in range(window_size-1):
-            
-            # past snapshots
-            snapshot_temp_int = solver_functions.results_user2solver_converter(state['cons_results_save'][:,:,snapshot_to_taken[indx]])
-            F [:,indx]          = (snapshot_temp_int-q_ref)*normalizor
-
         # future snapshot
         F [:,-1]          = (Q_bar_new_solver_int-q_ref)*normalizor
 

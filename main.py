@@ -99,7 +99,7 @@ solver_param = solver_functions.solver_parameters_collector(args,input_param)
 
 # start running the simulation
 
-if input_param['profiling'] == True:
+if solver_param['profiling'] == True:
 
     with cProfile.Profile() as pr:
 
@@ -112,7 +112,7 @@ if input_param['profiling'] == True:
 else: 
 
     state = ui_solver_bridge.driver(args,solver_param)
-    # solver_functions.results_recorder(solver_param, state)
+
 
 
 

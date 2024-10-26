@@ -95,7 +95,7 @@ def explicit_ssp_rk2( solver_param,rom_param,state ):
 
         iter = solver_param['iter']
 
-        q_old_full = state['cons_results_save'][:,:,iter-1].ravel()
+        q_old_full = state['cons_results_save'][:,:].ravel()
 
         q_old = q_old_full[rom_param['S_indx_solver']]
 
@@ -153,7 +153,7 @@ def explicit_ssp_rk3( solver_param,rom_param,state ):
 
         iter = solver_param['iter']
 
-        q_old_full = state['cons_results_save'][:,:,iter-1].ravel()
+        q_old_full = state['cons_results_save'][:,:].ravel()
 
         q_old = q_old_full[rom_param['S_indx_solver']]
 

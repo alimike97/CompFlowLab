@@ -17,6 +17,7 @@ def solver_parameters_collector(args,input_param):
         solver_param['rom_method']            = input_param['rom_method']     
         solver_param['hyper']                 = eval(input_param['hyper'])         
         solver_param['sampling_method']       = input_param['hyper_method']
+        solver_param['fom_results_max_iter']  = int(input_param['fom_results_max_iter'])
 
     elif  input_param['solver_mode'] == 'Adaptive ROM':
 
@@ -119,8 +120,15 @@ def solver_parameters_collector(args,input_param):
     
     ### Input Directory ###
     solver_param['working_dir']         = args.working_directory
-    solver_param['FOM_result_dir']      = input_param['fom_results_dir']
 
+
+    ### Saving Data ###
+    solver_param['save_interval']       = int(input_param['save_interval'])
+
+    ### Saving Data ###
+    solver_param['profiling']           = eval(input_param['profiling'])
+
+    
     ### Some Basic Calculations ###
 
     solver_param['dx']            = (solver_param['x_final'] - solver_param['x_initial']) / solver_param['cell_number']
@@ -150,8 +158,8 @@ def initialize_state(solver_param):
     num_prim_var  = solver_param['num_prim_var']
     num_species   = solver_param['num_species']
 
-    state['cons_results_save']      = np.zeros(( num_state_var , int(solver_param['cell_number'])    , int(int(solver_param['num_step'])) )  )
-    state['prim_results_save']      = np.zeros(( num_prim_var  , int(solver_param['cell_number'])    , int(int(solver_param['num_step'])))  )
+    state['cons_results_save']      = np.zeros(( num_state_var , int(solver_param['cell_number']) ))
+    state['prim_results_save']      = np.zeros(( num_prim_var  , int(solver_param['cell_number']) ))
 
     state['Q_cons']                 = np.zeros((num_state_var*int(solver_param['cell_number'])+(num_state_var*4)))
     state['Q_prim']                 = np.zeros((num_prim_var *int(solver_param['cell_number'])+(num_prim_var*4)))
@@ -175,7 +183,7 @@ def initialize_state(solver_param):
             state['gas_array_2nd_order'] = ct.SolutionArray(  state['gas'],(1,int(num_subfaces))   )
 
         # heat release is also plotted part of prim when there is a combustion case
-        state['prim_results_save']      = np.zeros(( num_prim_var+1  , int(solver_param['cell_number'])    , int(int(solver_param['num_step'])))  )
+        state['prim_results_save']      = np.zeros(( num_prim_var+1  , int(solver_param['cell_number'])))
 
 
     return state
@@ -747,38 +755,73 @@ def barth_jespersen(df_dx,Q_user,dx,solver_param):
 
     return df_dx
 
-def results_recorder(solver_param,state):
+def results_recorder(solver_param,rom_param,state):
 
     # prepare the name for the files to be saved
-    work_dir   = solver_param['working_dir']
+    dir_results = solver_param['working_dir'] + '\\' + solver_param['solver_mode'] + '_results'
+    iter        = solver_param['iter']
+    save_title  = 'iteration' + str(iter)
 
     if solver_param['solver_mode'] == 'FOM':
 
-        save_title = solver_param['solver_mode'] + ' ' + str(solver_param['num_step']) + ' ' + 'snapshots' + ' ' +solver_param['time_scheme'] 
+        # save the results and end the simulation
+        np.save( dir_results + '\\' + save_title + '_cons.npy' ,state['cons_results_save'])
+        np.save( dir_results + '\\' + save_title + '_prim.npy' ,state['prim_results_save'])
 
-    elif solver_param['solver_mode'] == 'ROM' or solver_param['solver_mode'] == 'Adaptive ROM' or solver_param['solver_mode'] == 'Hybrid ROM' :
+    elif solver_param['solver_mode'] == 'ROM' and iter == 0:
 
-        save_title = solver_param['solver_mode'] + ' ' + str(solver_param['num_step']) + ' ' + 'snapshots' + ' ' + solver_param['time_scheme'] + ' ' + solver_param['rom_method']
+        # save the results and end the simulation
+        np.save( dir_results + '\\' + 'cons_prim'      + '\\' + save_title + '_cons.npy'                 ,state['cons_results_save'])
+        np.save( dir_results + '\\' + 'cons_prim'      + '\\' + save_title + '_prim.npy'                 ,state['prim_results_save'])
+        np.save( dir_results + '\\' + 'q_r'            + '\\' + save_title + '_q_r.npy'                  ,rom_param['q_red0']       )
+        np.save( dir_results + '\\' + 'basis'          + '\\' + save_title + '_basis.npy'                ,rom_param['basis']        )
+        np.save( dir_results + '\\' + 'q_ref'          + '\\' + save_title + '_q_ref.npy'                ,rom_param['q_ref']        )
+        np.save( dir_results + '\\' + 'norm'           + '\\' + save_title + '_norm.npy'                 ,rom_param['normalizor']   )
+        np.save( dir_results + '\\' + 'denorm'         + '\\' + save_title + '_denorm.npy'               ,rom_param['denormalizor'] )
+        np.save( dir_results + '\\' + 'samples_user'   + '\\' + save_title + '_samples_user.npy'         ,rom_param['S_indx_user']  )
+        np.save( dir_results + '\\' + 'samples_solver' + '\\' + save_title + '_samples_solver.npy'       ,rom_param['S_indx_solver']) 
 
-        if solver_param['hyper'] == True:
+    elif solver_param['solver_mode'] == 'ROM':
 
-            save_title = save_title + '' + solver_param['sampling_method']
+        np.save( dir_results + '\\' + 'cons_prim'      + '\\' + save_title + '_cons.npy'                 ,state['cons_results_save'])
+        np.save( dir_results + '\\' + 'cons_prim'      + '\\' + save_title + '_prim.npy'                 ,state['prim_results_save'])
+        np.save( dir_results + '\\' + 'q_r'            + '\\' + save_title + '_q_r.npy'                  ,rom_param['q_red0']       )
 
-    print('Saving resutls into working directory')
+    elif  (solver_param['solver_mode'] == 'Adaptive ROM' and iter < int(solver_param['init_training_win']) ):
 
-    # save the results and end the simulation
-    np.save( work_dir + '/' +save_title + ' cons.npy' ,state['cons_results_save'])
-    np.save( work_dir + '/' +save_title + ' prim.npy' ,state['prim_results_save'])
+        # save the results and end the simulation
+        np.save( dir_results + '\\' + 'cons_prim'      + '\\' + save_title + '_cons.npy'                 ,state['cons_results_save'])
+        np.save( dir_results + '\\' + 'cons_prim'      + '\\' + save_title + '_prim.npy'                 ,state['prim_results_save'])
 
-    if solver_param['solver_mode'] != 'FOM':
+    elif  (solver_param['solver_mode'] == 'Adaptive ROM' and iter == int(solver_param['init_training_win']) ):
 
-        np.save( work_dir + '/' +save_title + ' q_r.npy'                  ,state['q_red_save']        )
-        np.save( work_dir + '/' +save_title + ' basis.npy'                ,state['basis_save']        )
-        np.save( work_dir + '/' +save_title + ' q_ref.npy'                ,state['q_ref_save']        )
-        np.save( work_dir + '/' +save_title + ' norm.npy'                 ,state['normalizor_save']   )
-        np.save( work_dir + '/' +save_title + ' denorm.npy'               ,state['denormalizor_save'] )
-        np.save( work_dir + '/' +save_title + ' samples_user.npy'         ,state['S_indx_user_save']  )
-        np.save( work_dir + '/' +save_title + ' samples_solver.npy'       ,state['S_indx_solver_save'])    
+        # save the results and end the simulation
+        np.save( dir_results + '\\' + 'cons_prim'      + '\\' + save_title + '_cons.npy'                 ,state['cons_results_save'])
+        np.save( dir_results + '\\' + 'cons_prim'      + '\\' + save_title + '_prim.npy'                 ,state['prim_results_save'])
+        np.save( dir_results + '\\' + 'basis'          + '\\' + save_title + '_basis.npy'                ,rom_param['basis']        )
+        np.save( dir_results + '\\' + 'q_ref'          + '\\' + save_title + '_q_ref.npy'                ,rom_param['q_ref']        )
+        np.save( dir_results + '\\' + 'norm'           + '\\' + save_title + '_norm.npy'                 ,rom_param['normalizor']   )
+        np.save( dir_results + '\\' + 'denorm'         + '\\' + save_title + '_denorm.npy'               ,rom_param['denormalizor'] )
+        np.save( dir_results + '\\' + 'samples_user'   + '\\' + save_title + '_samples_user.npy'         ,rom_param['S_indx_user']  )
+        np.save( dir_results + '\\' + 'samples_solver' + '\\' + save_title + '_samples_solver.npy'       ,rom_param['S_indx_solver'])
+
+
+        # q_r needed for init training windows
+        for indx in range(int(solver_param['init_training_win'])+1):
+
+            save_title  = 'iteration' + str(indx)
+            np.save( dir_results + '\\' + 'q_r'            + '\\' + save_title + '_q_r.npy'                  ,rom_param['q_red0']       )
+
+    elif  (solver_param['solver_mode'] == 'Adaptive ROM' and iter > int(solver_param['init_training_win']) ):
+
+        # save the results and end the simulation
+        np.save( dir_results + '\\' + 'cons_prim'      + '\\' + save_title + '_cons.npy'                 ,state['cons_results_save'])
+        np.save( dir_results + '\\' + 'cons_prim'      + '\\' + save_title + '_prim.npy'                 ,state['prim_results_save'])
+        np.save( dir_results + '\\' + 'q_r'            + '\\' + save_title + '_q_r.npy'                  ,rom_param['q_red0']       )
+        np.save( dir_results + '\\' + 'basis'          + '\\' + save_title + '_basis.npy'                ,rom_param['basis']        )
+        np.save( dir_results + '\\' + 'samples_user'   + '\\' + save_title + '_samples_user.npy'         ,rom_param['S_indx_user']  )
+        np.save( dir_results + '\\' + 'samples_solver' + '\\' + save_title + '_samples_solver.npy'       ,rom_param['S_indx_solver'])   
+
 
 def rusanov_flux_calculator(solver_param,state):
 

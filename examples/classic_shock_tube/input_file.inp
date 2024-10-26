@@ -1,14 +1,14 @@
 # solver setup
 
-solver_mode 		= Adaptive ROM
-rom_method  		= Galerkin
-arom_method		    = Direct Adapt
-pod_energy  		= 99.999
-hyper	    		= True
-hyper_method		= QDEIM
-init_training_win 	= 10
+solver_mode 		    = Adaptive ROM
+rom_method  		    = Galerkin
+arom_method		        = Direct Adapt
+pod_energy  		    = 99.999
+hyper	    		    = True
+hyper_method		    = QDEIM
+init_training_win 	    = 10
 unsampled_update_freq 	= 10
-fom_results_dir		= ""
+fom_results_max_iter    = ""
 
 # time discretization
 dt            = 5e-5
@@ -48,24 +48,26 @@ mass_frac_ic  = [[1.0, 0.0],[1.0, 0.0]]
 
 # gas model
 gas_model       = Non-Reacting Air
-flux_scheme     = 2nd Order Roe
-limiter	        = True
-limiter_method  = barth
+flux_scheme     = 1st Order Roe
+limiter	        = False
+limiter_method  = minmod
 viscous	        = False
 
 # Visualization
 
-visual      = True
-variable1 	= Density
-variable2 	= Pressure
-variable3 	= Velocity
-variable4 	= Temprature
+visual          = True
+variable1 	    = Density
+variable2 	    = Pressure
+variable3 	    = Velocity
+variable4 	    = Temprature
 update_interval = 100
-plot_fom	= False
+plot_fom	    = False
+
+# Saving
+save_interval   = 100
 
 # Profiling
-
-profiling	= False
+profiling	    = False
 
 
 

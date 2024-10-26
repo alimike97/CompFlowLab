@@ -1,18 +1,20 @@
 # solver setup
 
-solver_mode 		= fom
-rom_method  		= galerkin
-pod_energy  		= 99.999
-hyper	    		= true
-hyper_method		= qdeim
-init_training_win 	= 10
+solver_mode 		    = Adaptive ROM
+rom_method  		    = Galerkin
+arom_method		        = Direct Adapt
+pod_energy  		    = 99.999
+hyper	    		    = True
+hyper_method		    = QDEIM
+init_training_win 	    = 10
+unsampled_update_freq 	= 10
+fom_results_max_iter    = ""
 
 # time discretization
 dt            = 5e-5
 num_steps     = 3500
-time_scheme   = explicit_fd_euler
-dual_time     = false
-res_tol       = 1e-5
+time_scheme   = Explicit - FD Euler
+
 
 # space discretization
 x_initial   = 0
@@ -20,18 +22,18 @@ x_final     = 1
 cell_number = 500 
 
 # inlet BC
-rho_inlet        = extrap
-vel_inlet        = extrap
-press_inlet      = extrap
-temp_inlet       = extrap
-mass_frac_inlet  = extrap
+rho_inlet        = extrapolate
+vel_inlet        = extrapolate
+press_inlet      = extrapolate
+temp_inlet       = extrapolate
+mass_frac_inlet  = extrapolate
 
 # outlet BC
-rho_outlet        = extrap
-vel_outlet        = extrap
-press_outlet      = extrap
-temp_outlet       = extrap
-mass_frac_outlet  = extrap
+rho_outlet        = extrapolate
+vel_outlet        = extrapolate
+press_outlet      = extrapolate
+temp_outlet       = extrapolate
+mass_frac_outlet  = extrapolate
 
 # Initial Condition
 
@@ -43,16 +45,28 @@ rho_ic        = [1,1,1]
 mass_frac_ic  = [[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]]
 
 # gas model
-gas_model   = ideal gas model
-flux_scheme = roe
+gas_model       = Non-Reacting Air
+flux_scheme     = 1st Order Roe
+limiter	        = False
+limiter_method  = minmod
+viscous	        = True
 
 # Visualization
 
-variable1 	= Density
-variable2 	= Pressure
-variable3 	= Velocity
-variable4 	= None
+visual          = True
+variable1 	    = Density
+variable2 	    = Pressure
+variable3 	    = Velocity
+variable4 	    = Temprature
 update_interval = 100
+plot_fom	    = False
+
+
+# Saving
+save_interval = 100
+
+# Profiling
+profiling	    = False
 
 
 
