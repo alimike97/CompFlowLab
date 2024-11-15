@@ -1,11 +1,11 @@
 # solver setup
 
-solver_mode 		    = FOM
+solver_mode 		    = Adaptive ROM
 rom_method  		    = Galerkin
 arom_method		        = Direct Adapt
 pod_energy  		    = 99.999
 hyper	    		    = True
-hyper_method		    = QDEIM
+hyper_method		    = Gappy POD + Shock
 init_training_win 	    = 10
 unsampled_update_freq 	= 10
 fom_results_dir		    = ""
@@ -46,8 +46,8 @@ mass_frac_ic  = [[1.0, 0.0],[1.0, 0.0],[1.0, 0.0]]
 
 # gas model
 gas_model       = Non-Reacting Air
-flux_scheme     = 2nd Order Roe
-limiter	        = True
+flux_scheme     = 1st Order Roe
+limiter	        = False
 limiter_method  = minmod 
 viscous	        = False
 
@@ -58,11 +58,11 @@ variable1 	    = Density
 variable2 	    = Pressure
 variable3 	    = Velocity
 variable4 	    = None
-update_interval = 1
+update_interval = 100
 plot_fom	    = False
 
 # Saving
-save_interval = 100
+save_interval = 1
 
 # Profiling
 

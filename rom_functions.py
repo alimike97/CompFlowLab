@@ -676,7 +676,7 @@ def multi_snapshot_adaptive_rom_progress(solver_param,rom_param,state,iter):
 
                 ### adapt sample ###
 
-                rom_param,state = adapt_sample(solver_param,rom_param,F,state)
+                rom_param,state = adapt_sample(solver_param,rom_param,rom_param['F'],state)
 
     return state, solver_param , rom_param
 
@@ -823,10 +823,6 @@ def adapt_sample(solver_param,rom_param,F,state):
 
         Q_tilda_correct_solver_full = state['Q_cons']
 
-        # if solver_param['iter'] == 300:
-
-        # breakpoint()
-
         solver_param['hyper'] = False
         solver_param['dt'] = solver_param['unsampled_update_freq'] * solver_param['dt']
 
@@ -842,10 +838,6 @@ def adapt_sample(solver_param,rom_param,F,state):
 
         rho_bar_shock = Q_bar_shock_solver_int[0:solver_param['cell_number']]
 
-        # plt.figure()
-        # plt.plot(rho_bar_shock,label='future shock')
-
-
         second_derv_density = np.gradient(np.gradient(rho_bar_shock))
 
         deflection_points = np.argsort(second_derv_density)[-2:]
@@ -858,82 +850,68 @@ def adapt_sample(solver_param,rom_param,F,state):
 
         shock_range = np.sort(np.unique(np.append(shorck_range1,shorck_range2)))
 
-        # sorted_diff_rho_bar_shock = np.sort(np.where(diff_rho_bar_shock != 0))[0]
+        ### QDEIM ###
+        S_indx_user_qdeim = QDEIM_sample_point_finder(basis,solver_param['cell_number'])
 
-        # deflection_points = sorted_diff_rho_bar_shock[0:3]
+        for indx in S_indx_user_qdeim:
 
-        # future_shock_head = sorted_diff_rho_bar_shock[-1]
-        # future_shock_tail = future_shock_head - 3
+            if indx in shock_range:
 
-        # ### current shock ###
+                indices_to_delete = np.where(shock_range == indx)
+                shock_range = np.delete(shock_range, indices_to_delete)
 
-        # current_rho_bar_shock = Q_tilda_correct_solver_int[0:500]
+        S_indx_user       = np.sort(np.append(S_indx_user_qdeim,shock_range))
 
-        # current_diff_rho_bar_shock = np.abs(np.diff(current_rho_bar_shock))
-
-        # current_sorted_diff_rho_bar_shock = np.flip(np.argsort(current_diff_rho_bar_shock))
-
-        # current_deflection_points = np.sort(current_sorted_diff_rho_bar_shock[0:5])
-
-        # current_shock_head = current_deflection_points[4]
-        # current_shock_tail = current_deflection_points[3]
-
-        ### shock capturing sampling ###
-
-        # shock_range = np.arange(mid_shock_indx-10,mid_shock_indx+10,1)
-        # num_req_samples_shock = len(shock_range)
-
-    
         ### normal sampling ###
-        # num_req_samples = len(rom_param['S_indx_user'])-num_req_samples_shock
-        num_req_samples = 100
-        basis_pinv = np.linalg.pinv(rom_param['basis'][rom_param['S_indx_solver'],:])
+
+        num_req_samples   = 29
+        basis_pinv        = np.linalg.pinv(rom_param['basis'][rom_param['S_indx_solver'],:])
 
         interp_error      = np.abs(F[:,-1] - (rom_param['basis']@basis_pinv)@F[rom_param['S_indx_solver'],-1])
         interp_error_indx = np.argsort(np.squeeze(interp_error))[::-1]
 
-        
-        S_indx_solver     = interp_error_indx[0:num_req_samples]
-        S_indx_user       = solver2user_indx_converter(S_indx_solver,solver_param['cell_number'])
-        S_indx_user       = np.sort(np.unique(S_indx_user))
+        S_indx_solver_interp     = interp_error_indx[0:num_req_samples]
+        S_indx_user_interp       = solver2user_indx_converter(S_indx_solver_interp,solver_param['cell_number'])
+        S_indx_user_interp       = np.sort(np.unique(S_indx_user_interp))
 
-        for indx in S_indx_user:
+        for indx in S_indx_user_interp:
 
-            if indx in shock_range:
+            if indx in S_indx_user:
 
-                indices_to_delete = np.where(S_indx_user == indx)
-                S_indx_user = np.delete(S_indx_user, indices_to_delete)
+                indices_to_delete = np.where(S_indx_user_interp == indx)
+                S_indx_user_interp = np.delete(S_indx_user_interp, indices_to_delete)
 
-        S_indx_solver     = user2solver_indx_converter(S_indx_user,solver_param['num_state_var'],solver_param['cell_number'])
+        S_indx_user_prefinal       = np.sort(np.append(S_indx_user,S_indx_user_interp)) 
+        S_indx_solver_prefinal     = user2solver_indx_converter(S_indx_user_prefinal,solver_param['num_state_var'],solver_param['cell_number'])
 
-        num_selected_samples = len(S_indx_user)
+        num_selected_samples = len(S_indx_user_prefinal)
         counter = 0
+
+        S_indx_user   = S_indx_user_prefinal
+        S_indx_solver = S_indx_solver_prefinal
+
 
         while num_selected_samples < num_req_samples:
 
             start_indx = num_req_samples + counter
             end_indx   = num_req_samples + counter + 1
 
-            new_indx = interp_error_indx[start_indx:end_indx]
-            S_indx_solver=np.append(S_indx_solver,new_indx)
+            new_indx              = interp_error_indx[start_indx:end_indx]
+            S_indx_solver_prefinal= np.append(S_indx_solver_prefinal,new_indx)
 
-            S_indx_user       = solver2user_indx_converter(S_indx_solver,solver_param['cell_number'])
-            S_indx_user       = np.sort(np.unique(S_indx_user))
+            S_indx_user_prefinal       = solver2user_indx_converter(S_indx_solver_prefinal,solver_param['cell_number'])
+            S_indx_user_prefinal       = np.sort(np.unique(S_indx_user_prefinal))
 
-            for indx in S_indx_user:
+            S_indx_solver_prefinal     = user2solver_indx_converter(S_indx_user_prefinal,solver_param['num_state_var'],solver_param['cell_number'])
 
-                if indx in shock_range:
-
-                    indices_to_delete = np.where(S_indx_user == indx)
-                    S_indx_user = np.delete(S_indx_user, indices_to_delete)
-
-            S_indx_solver     = user2solver_indx_converter(S_indx_user,solver_param['num_state_var'],solver_param['cell_number'])
+            S_indx_user   = S_indx_user_prefinal
+            S_indx_solver = S_indx_solver_prefinal
 
             num_selected_samples = len(S_indx_user)
             counter = counter + 1
 
-        S_indx_user       = np.sort(np.append(S_indx_user,shock_range))
-        S_indx_solver     = user2solver_indx_converter(S_indx_user,solver_param['num_state_var'],solver_param['cell_number'])
+        # S_indx_user       = np.sort(np.append(S_indx_user,shock_range))
+        # S_indx_solver     = user2solver_indx_converter(S_indx_user,solver_param['num_state_var'],solver_param['cell_number'])
 
         solver_param['hyper'] = True
         solver_param['dt'] = solver_param['dt'] / solver_param['unsampled_update_freq']
