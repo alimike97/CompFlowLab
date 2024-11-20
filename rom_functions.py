@@ -864,7 +864,7 @@ def adapt_sample(solver_param,rom_param,F,state):
 
         ### normal sampling ###
 
-        num_req_samples   = 29
+        num_req_samples   = 50
         basis_pinv        = np.linalg.pinv(rom_param['basis'][rom_param['S_indx_solver'],:])
 
         interp_error      = np.abs(F[:,-1] - (rom_param['basis']@basis_pinv)@F[rom_param['S_indx_solver'],-1])
@@ -887,28 +887,31 @@ def adapt_sample(solver_param,rom_param,F,state):
         num_selected_samples = len(S_indx_user_prefinal)
         counter = 0
 
-        S_indx_user   = S_indx_user_prefinal
-        S_indx_solver = S_indx_solver_prefinal
+        if num_selected_samples >= num_req_samples:
 
+            S_indx_user   = S_indx_user_prefinal[0:num_req_samples]
+            S_indx_solver = user2solver_indx_converter(S_indx_user,solver_param['num_state_var'],solver_param['cell_number'])
 
-        while num_selected_samples < num_req_samples:
+        else:
 
-            start_indx = num_req_samples + counter
-            end_indx   = num_req_samples + counter + 1
+            while num_selected_samples < num_req_samples:
 
-            new_indx              = interp_error_indx[start_indx:end_indx]
-            S_indx_solver_prefinal= np.append(S_indx_solver_prefinal,new_indx)
+                start_indx = num_req_samples + counter
+                end_indx   = num_req_samples + counter + 1
 
-            S_indx_user_prefinal       = solver2user_indx_converter(S_indx_solver_prefinal,solver_param['cell_number'])
-            S_indx_user_prefinal       = np.sort(np.unique(S_indx_user_prefinal))
+                new_indx              = interp_error_indx[start_indx:end_indx]
+                S_indx_solver_prefinal= np.append(S_indx_solver_prefinal,new_indx)
 
-            S_indx_solver_prefinal     = user2solver_indx_converter(S_indx_user_prefinal,solver_param['num_state_var'],solver_param['cell_number'])
+                S_indx_user_prefinal       = solver2user_indx_converter(S_indx_solver_prefinal,solver_param['cell_number'])
+                S_indx_user_prefinal       = np.sort(np.unique(S_indx_user_prefinal))
 
-            S_indx_user   = S_indx_user_prefinal
-            S_indx_solver = S_indx_solver_prefinal
+                S_indx_solver_prefinal     = user2solver_indx_converter(S_indx_user_prefinal,solver_param['num_state_var'],solver_param['cell_number'])
 
-            num_selected_samples = len(S_indx_user)
-            counter = counter + 1
+                S_indx_user   = S_indx_user_prefinal
+                S_indx_solver = S_indx_solver_prefinal
+
+                num_selected_samples = len(S_indx_user)
+                counter = counter + 1
 
         # S_indx_user       = np.sort(np.append(S_indx_user,shock_range))
         # S_indx_solver     = user2solver_indx_converter(S_indx_user,solver_param['num_state_var'],solver_param['cell_number'])

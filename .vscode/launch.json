@@ -4,6 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+    
         {
             "name": "Python Debugger: Current File with Arguments",
             "type": "debugpy",
@@ -11,8 +12,8 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
-                "C:\\GIT_Fork\\ROMify\\examples\\wall_reflected_detonation",
-                "C:\\GIT_Fork\\ROMify\\examples\\wall_reflected_detonation\\input_file_arom.inp"
+                "C:\\GIT_Fork\\ROMify\\examples\\colliding_shocks",
+                "C:\\GIT_Fork\\ROMify\\examples\\colliding_shocks\\input_file.inp"
             ]
         }
     ]
