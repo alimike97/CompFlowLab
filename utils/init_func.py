@@ -177,7 +177,21 @@ def init_solver(solver_param,state):
         solver_param['SA_Mode_SROM_Training']      = False
         solver_param['SA_Mode_SROM_Transition']    = False
         solver_param['SA_Mode_SROM']               = False
-        
+
+    elif solver_param['solver_mode'] == 'DACAROM':
+
+        import solver.DACAROM as solver_module
+
+        import solver.AROM  as AROM_solver_module
+        import solver.ROM   as ROM_solver_module
+
+        rom_param = {}
+        solver_param['hyper']              =  False
+        solver_param['FOM2ROM_trans_iter'] = solver_param['init_training_win']
+
+        solver_param['AROM_solver']        = AROM_solver_module
+        solver_param['ROM_solver']         = ROM_solver_module
+
     return solver_module , rom_param
 
 def ic_generator(solver_param,state):

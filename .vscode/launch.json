@@ -13,8 +13,8 @@
             "program": "c:\\GIT_Fork\\ROMify\\romify.py",
             "console": "integratedTerminal",
             "args": [
-                "c:\\GIT_Fork\\ROMify2\\examples\\sod_shock_tube",
-                "c:\\GIT_Fork\\ROMify2\\examples\\sod_shock_tube\\input_file.inp"
+                "c:\\GIT_Fork\\ROMify\\examples\\sod_shock_tube",
+                "c:\\GIT_Fork\\ROMify\\examples\\sod_shock_tube\\input_file.inp"
             ]
         }
     ]

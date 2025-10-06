@@ -1,10 +1,10 @@
 # solver
-solver_mode   = AROM
+solver_mode   = DACAROM
 
 # time discretization
 dt            = 5e-5
 num_steps     = 3000
-time_scheme   = BDF
+time_scheme   = FDF
 
 # space discretization
 x_initial   = 0
@@ -51,10 +51,10 @@ variable1 	    = Density
 variable2 	    = Pressure
 variable3 	    = Velocity
 variable4 	    = Temprature
-update_interval = 100
+update_interval = 1
 
 # Saving
-save_interval   = 100
+save_interval   = 1
 
 # Profiling
 profiling	    = False
@@ -73,7 +73,7 @@ sampling_rate           = 2
 init_training_win 	    = 10
 unsampled_update_freq 	= 10
 
-training_data_dir       = C:\GIT_Fork\ROMify2\examples\sod_shock_tube\FOM_results
+training_data_dir       = C:\GIT_Fork\ROMify\examples\sod_shock_tube\DACAROM_results
 training_start_iter     = 0
 training_step_iter      = 10
 training_end_iter       = 5000
