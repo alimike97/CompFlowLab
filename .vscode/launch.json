@@ -10,7 +10,7 @@
             "name": "ROMify Debugger VScode",
             "type": "debugpy",
             "request": "launch",
-            "program": "c:\\GIT_Fork\\ROMify2\\romify.py",
+            "program": "c:\\GIT_Fork\\ROMify\\romify.py",
             "console": "integratedTerminal",
             "args": [
                 "c:\\GIT_Fork\\ROMify2\\examples\\sod_shock_tube",

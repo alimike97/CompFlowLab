@@ -1,4 +1,4 @@
-def advance_time(solver_param,rom_param,state):
+def advance_time(solver_param,rom_param,state,physics=None):
 
     dt    = solver_param['dt']
     Q_old = state['Q_cons']

@@ -177,7 +177,7 @@ def advance_one_time_step(solver_param,state,physics,time_integration,rom_param=
     state['Q_cons']    = Q_tilda_old_solver_int[rom_param['S_indx_solver']]
 
     # find the solution only at sampled points
-    state              = time_integration.advance_time(solver_param,rom_param,state)
+    state              = time_integration.advance_time(solver_param,rom_param,state,physics)
     Q_tilda_new        = state['Q_cons']
 
     # compute retained qr

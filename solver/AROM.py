@@ -154,7 +154,7 @@ def advance_one_time_step(solver_param,state,physics,time_integration,rom_param=
 
             # take FOM step for initial training
             state = physics.residual_calculator(solver_param,rom_param,state)
-            state = time_integration.advance_time(solver_param,rom_param,state)
+            state = time_integration.advance_time(solver_param,rom_param,state,physics)
 
             # post process part
             if solver_param['injection']:
@@ -180,7 +180,7 @@ def advance_one_time_step(solver_param,state,physics,time_integration,rom_param=
 
             # take one more FOM step and prepare basis and samples based on that
             state = physics.residual_calculator(solver_param,rom_param,state)
-            state = time_integration.advance_time(solver_param,rom_param,state)
+            state = time_integration.advance_time(solver_param,rom_param,state,physics)
 
             # post process part
             if solver_param['injection']:
@@ -253,7 +253,7 @@ def advance_one_time_step(solver_param,state,physics,time_integration,rom_param=
 
             # take one FOM step
             state = physics.residual_calculator(solver_param,rom_param,state)
-            state = time_integration.advance_time(solver_param,rom_param,state)
+            state = time_integration.advance_time(solver_param,rom_param,state,physics)
 
             if solver_param['injection']: 
 
@@ -323,7 +323,7 @@ def advance_one_time_step(solver_param,state,physics,time_integration,rom_param=
             state['Q_cons']    = Q_tilda_old
             state              = physics.residual_calculator(solver_param,rom_param,state)
             state['Q_cons']    = Q_tilda_old_solver_int[rom_param['S_indx_solver']]
-            state              = time_integration.advance_time(solver_param,rom_param,state)
+            state              = time_integration.advance_time(solver_param,rom_param,state,physics)
             Q_bar_new_sampling = state['Q_cons']
 
             # Estimate full-state at unsampled points using old basis (DEIM Equation) -- PREDICTION STEP
@@ -341,7 +341,9 @@ def advance_one_time_step(solver_param,state,physics,time_integration,rom_param=
                 state = physics.injection_correction(solver_param,state)
                 Q_bar_new_solver_full = state['Q_cons']
 
-                Q_bar_new_solver_int  = reshape_func.solver_eliminate_ghost(solver_param,Q_bar_new_solver_full)
+                Q_bar_new_solver_int  = reshape_func.solver_eliminate_ghost(solver_param['cell_number'],
+                                                                            solver_param['num_state_var'],
+                                                                            Q_bar_new_solver_full)
 
             # adapt basis with newly found sanpshot 
             rom_param = adapt_basis(solver_param,rom_param,Q_bar_new_solver_int)

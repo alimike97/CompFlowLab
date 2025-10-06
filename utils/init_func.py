@@ -73,6 +73,18 @@ def init_time_integration(solver_param):
 
         import time_integration.FDF as time_integration
 
+    if solver_param['time_scheme'] == 'BDF':
+
+        import time_integration.BDF as time_integration
+
+    if solver_param['time_scheme'] == 'SSPRK2':
+
+        import time_integration.SSPRK2 as time_integration
+
+    if solver_param['time_scheme'] == 'SSPRK3':
+
+        import time_integration.SSPRK3 as time_integration
+
     return time_integration
 
 def init_solver(solver_param,state):
@@ -146,6 +158,25 @@ def init_solver(solver_param,state):
         rom_param = {}
         solver_param['hyper']              =  False
         solver_param['FOM2ROM_trans_iter'] = solver_param['init_training_win']
+
+    elif solver_param['solver_mode'] == 'SAROM':
+
+        import solver.SAROM as solver_module
+        import solver.AROM  as AROM_solver_module
+
+        rom_param = {}
+        solver_param['hyper']              = False
+        solver_param['FOM2ROM_trans_iter'] = solver_param['init_training_win']
+
+        solver_param['AROM_solver']        = AROM_solver_module
+
+        # initialize all of the modes in this method
+        solver_param['SA_Mode_AROM_Training']      = True
+        solver_param['SA_Mode_AROM_Transition']    = False
+        solver_param['SA_Mode_SROM_Search']        = False
+        solver_param['SA_Mode_SROM_Training']      = False
+        solver_param['SA_Mode_SROM_Transition']    = False
+        solver_param['SA_Mode_SROM']               = False
         
     return solver_module , rom_param
 

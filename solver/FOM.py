@@ -41,7 +41,7 @@ def advance_one_time_step(solver_param,state,physics,time_integration,rom_param=
     state = physics.residual_calculator(solver_param,rom_param,state)
 
     # time integrate
-    state = time_integration.advance_time(solver_param,rom_param,state)
+    state = time_integration.advance_time(solver_param,rom_param,state,physics)
 
     if solver_param['injection']:
 

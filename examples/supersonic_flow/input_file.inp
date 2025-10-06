@@ -1,30 +1,15 @@
-# solver setup
-
-solver_mode 		    = FOM
-rom_method  		    = Galerkin
-arom_method		        = Direct Adapt
-pod_energy  		    = 99.99999
-hyper	    		    = True
-hyper_method		    = QDEIM
-init_training_win 	    = 10
-unsampled_update_freq 	= 10
-fom_results_dir		    = ""
-fom_results_max_iter    = ""
-
-
-fom_results_start     = 12560
-fom_results_end       = 25120
-fom_results_step      = 100
+# solver
+solver_mode   = FOM
 
 # time discretization
-dt            = 2e-6
-num_steps     = 5000
-time_scheme   = Explicit - FD Euler
+dt            = 1e-7
+num_steps     = 10000
+time_scheme   = SSPRK3
 
 # space discretization
 x_initial   = 0
 x_final     = 1
-cell_number = 500 
+cell_number = 500
 
 # inlet BC
 rho_inlet        = 1.225/0.1225/5000
@@ -53,28 +38,54 @@ mass_frac_ic  = [[1.0, 0.0]]
 
 
 # gas model
-gas_model       = Non-Reacting Air
+gas_model       = Air
 flux_scheme     = 1st Order Roe
 limiter	        = False
 limiter_method  = minmod
 viscous	        = False
 
 # Visualization
-
 visual          = True
+save_visual     = False
 variable1 	    = Density
 variable2 	    = Pressure
 variable3 	    = Velocity
 variable4 	    = Temprature
-update_interval = 1000
-plot_fom	    = False
+update_interval = 100
 
 # Saving
-save_interval   = 1
+save_interval   = 100
 
 # Profiling
-profiling	    = True
+profiling	    = False
 
+# Injection
+injection       = False
+
+# ROM Setup
+rom_method  		    = Galerkin
+nl_rom_model            = rbf
+arom_method		        = direct
+pod_energy  		    = 99.999
+hyper	    		    = True
+hyper_method		    = QDEIM
+sampling_rate           = 2
+init_training_win 	    = 10
+unsampled_update_freq 	= 10
+
+training_data_dir       = C:\GIT_Fork\ROMify2\examples\sod_shock_tube\FOM_results
+training_start_iter     = 0
+training_step_iter      = 100
+training_end_iter       = 5000
+
+sarom_training_step      = 100
+sarom_srom_solver        = PROM
+sarom_cumsum_tol         = 0.01
+sarom_moving_avg_tol     = 0.01
+ 
+
+# Restart 
+arom_restart            = False
 
 
 

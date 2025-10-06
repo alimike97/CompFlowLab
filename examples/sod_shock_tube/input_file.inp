@@ -4,7 +4,7 @@ solver_mode   = AROM
 # time discretization
 dt            = 5e-5
 num_steps     = 3000
-time_scheme   = FDF
+time_scheme   = BDF
 
 # space discretization
 x_initial   = 0
@@ -78,8 +78,13 @@ training_start_iter     = 0
 training_step_iter      = 10
 training_end_iter       = 5000
 
+sarom_training_step      = 100
+sarom_srom_solver        = PROM
+sarom_cumsum_tol         = 0.01
+sarom_moving_avg_tol     = 0.01
+
 # Restart 
-arom_restart            = True
+arom_restart            = False
 
 
 

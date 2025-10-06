@@ -29,8 +29,8 @@ from matplotlib.animation import FFMpegWriter
 # prim_ic = prim_ic[:-1,:]
 # np.save(r"C:\GIT_Fork\ROMify\examples\1D_RDE\ROM_IC.npy",prim_ic)
 
-# dir_name = r"C:\GIT_Fork\ROMify\examples\supersonic_flow\FOM_results"
-# dir_name = r"C:\GIT_Fork\ROMify\examples\supersonic_flow\Hybrid ROM_results\cons_prim"
+dir_name_FOM = r"C:\GIT_Fork\ROMify\examples\supersonic_flow\AROM_results\cons_prim"
+dir_name_ROM = r"C:\GIT_Fork\ROMify\examples\supersonic_flow\SAROM_results\cons_prim"
 # dir_name = r"C:\GIT_Fork\ROMify\examples\supersonic_flow\Hybrid ROM_results\cons_prim"
 # dir_name_fom = r'C:\GIT_Fork\ROMify\examples\1D_RDE\FOM_results'
 # dir_name_fom = r'C:\GIT_Fork\ROMify\examples\wall_reflected_detonation\FOM_results'
@@ -46,7 +46,7 @@ from matplotlib.animation import FFMpegWriter
 # dir_name_fom = r"C:\Users\mohag\OneDrive\Desktop\RDE_ROMify_Final_Test_Larger_Domain\examples\1D_RDE\FOM_results"
 # dir_name_fom = r"C:\Users\mohag\OneDrive\Desktop\non_intrusive_rde\1D_RDE_results\FOM_results"
 # dir_name_fom = r"C:\Users\mohag\OneDrive\Desktop\cons_prim"
-dir_name_fom = r"C:\Users\mohag\OneDrive\Desktop\RDE_ROMify_FOM_AROM2\RDE_ROMify_FOM_AROM2\examples\1D_RDE\Adaptive ROM_results\cons_prim"
+# dir_name_fom = r"C:\Users\mohag\OneDrive\Desktop\RDE_ROMify_FOM_AROM2\RDE_ROMify_FOM_AROM2\examples\1D_RDE\Adaptive ROM_results\cons_prim"
 # dir_name_fom = r'C:\Users\mohag\OneDrive\Desktop\RDE_ROMify_Adaptive_ROM_Inj\examples\1D_RDE\Adaptive ROM_results\cons_prim'
 # dir_name_fom = r"C:\Users\mohag\OneDrive\Desktop\cons_prim"
 # dir_name_fom = r'C:\Users\mohag\OneDrive\Desktop\FGS_Journal_Paper_Graphs\detonation_data\FOM_results_4en9'
@@ -439,27 +439,27 @@ fig,ax = plt.subplots(1,1)
 
 ax2 = ax.twinx()
 
-iter_list = np.arange(1000,9600000,10000)
+iter_list = np.arange(0,100000,200)
 # iter_list = [79999]
 # iter_list = [628,1256,1884,2512,3140,3768,4396,5024,5652,6280,
 #              6908,7536]
 
-x=np.linspace(0,0.288,500)
+x=np.linspace(0,1,500)
 
 # prim_data_rom   = np.load(os.path.join(dir_name, str(0)+'iteration_prim.npy'))
-prim_data_ali     = np.load(os.path.join(dir_name_fom, str(int(iter_list[0]))+'iteration_prim.npy'))
-prim_data_ali2    = np.load(os.path.join(dir_name_fom, str(int(iter_list[0]))+'iteration_prim.npy'))
+prim_data_ali     = np.load(os.path.join(dir_name_FOM, str(int(iter_list[0]))+'iteration_prim.npy'))
+prim_data_ali2    = np.load(os.path.join(dir_name_ROM, str(int(iter_list[0]))+'iteration_prim.npy'))
 # prim_data_ku     = np.load(os.path.join(dir_name_ku, str(int(10))+'iteration_prim.npy'))
 # sample_data_ku   = np.load(os.path.join(dir_name_ku_sample, str(int(10))+'iteration_samples_user.npy'))
 # cons_data_fom   = np.load(os.path.join(dir_name_fom, str(int(0))+'iteration_prim.npy'))
 
 # ax.axhline(97000,0,0.288)
-line1,=ax.plot(x,prim_data_ali[2,:],label=str(iter)+'iteration',c='blue',ls='-')
+line1,=ax.plot(x,prim_data_ali[0,:],label=str(iter)+'iteration',c='blue',ls='-')
 # line2,=ax2.plot(x,prim_data_ali2[-1,:],label=str(iter)+'iteration',c='black',ls='--')
-line2,=ax.plot(x,prim_data_ali[2,:],label=str(iter)+'iteration',c='black',ls='--')
+line2,=ax.plot(x,prim_data_ali2[0,:],label=str(iter)+'iteration',c='black',ls='--')
 # line3,=ax.plot(x[sample_data_ku],prim_data_ku[-1,sample_data_ku],label=str(iter)+'iteration',c='tab:red',ls='',marker='o')
 
-ax.set_ylim([0,5e6])
+ax.set_ylim([1,2])
 # ax.set_ylabel('Pressure [Pa]')
 # ax.set_ylim([-1500,1500])
 # ax2.set_ylim([0,5e6])
@@ -476,14 +476,14 @@ for iter in iter_list:
     # q_rep_user = np.reshape(q_rep_solver,(3,500))
 
     # prim_data_rom   = np.load(os.path.join(dir_name, str(iter)+'iteration_prim.npy'))
-    prim_data_ali   = np.load(os.path.join(dir_name_fom, str(int(iter))+'iteration_prim.npy'))
-    # prim_data_ali2   = np.load(os.path.join(dir_name_fom, str(int(iter))+'iteration_prim.npy'))
+    prim_data_ali   = np.load(os.path.join(dir_name_FOM, str(int(iter))+'iteration_prim.npy'))
+    prim_data_ali2   = np.load(os.path.join(dir_name_ROM, str(int(iter))+'iteration_prim.npy'))
     # prim_data_ku    = np.load(os.path.join(dir_name_ku, str(int(iter))+'iteration_prim.npy'))
     # sample_data_ku  = np.load(os.path.join(dir_name_ku_sample, str(int(iter))+'iteration_samples_user.npy'))
 
 
-    line1.set_data(x,prim_data_ali[2,:])
-    # line2.set_data(x,prim_data_ku[2,:])
+    line1.set_data(x,prim_data_ali[0,:])
+    line2.set_data(x,prim_data_ali2[0,:])
     # line3.set_data(x[sample_data_ku],prim_data_ku[2,sample_data_ku])
 
     # if iter == 204000:
@@ -492,7 +492,7 @@ for iter in iter_list:
 
     print(iter)
 
-    plt.pause(0.1)
+    plt.pause(0.001)
 
 
 ax.legend()
