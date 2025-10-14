@@ -143,6 +143,9 @@ def init_solver_param(args,input_param):
     solver_param['training_step_iter' ]   = int(input_param['training_step_iter' ])
     solver_param['training_end_iter'  ]   = int(input_param['training_end_iter'  ])
 
+    solver_param['rom_basis_generate']     = eval(input_param['rom_basis_generate'])
+    solver_param['rom_basis_dir']          = input_param['rom_basis_dir']
+
     solver_param['sarom_training_step'  ] = int(input_param['sarom_training_step'  ])
     solver_param['SAROM_SROM_solver'  ]   = input_param['sarom_srom_solver'  ]
     solver_param['sarom_cumsum_tol'  ]    = float(input_param['sarom_cumsum_tol'  ])

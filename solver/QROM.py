@@ -9,81 +9,100 @@ def precomputer(solver_param):
 
     print('Initializing ROM')
 
-    rom_param = {}
+    # rom params are already precomputed so we will only load them
+    if solver_param['rom_basis_generate']:
 
-    training_data_cons = reshape_func.assemble_snapshots(solver_param)
+        print('Loading precomputed variables ...')
 
-    # number of snapshot
-    num_snapshot = len(training_data_cons[0,0,:])
+        rom_param = {}
 
-    # reference profile
-    q_ref = training_data_cons[:,:,0]
+        rom_param['basis']      = np.load(os.path.join(solver_param['rom_basis_dir'],'basis.npy'))
+        rom_param['quad_basis'] = np.load(os.path.join(solver_param['rom_basis_dir'],'quad_basis.npy'))
+        rom_param['q_ref']      = np.load(os.path.join(solver_param['rom_basis_dir'],'q_ref.npy'))
+        rom_param['norm']       = np.load(os.path.join(solver_param['rom_basis_dir'],'norm.npy'))
+        rom_param['denorm']     = np.load(os.path.join(solver_param['rom_basis_dir'],'denorm.npy'))
+        rom_param['qr0']        = np.load(os.path.join(solver_param['rom_basis_dir'],'qr0.npy'))
 
-    # center data 
-    centered_data = training_data_cons - q_ref[:,:,np.newaxis]
 
-    # normalizing factors
-    l2_factors         = np.sqrt(np.sum(centered_data**2, axis=2))
-    norm_factor        = np.mean(l2_factors, axis=1)
+    else:
 
-    # centered_normalized data
-    cen_norm_data = centered_data / norm_factor[:, np.newaxis, np.newaxis]
+        print('Computing rom parameters ...')
 
-    # data matrix
-    tall_thin_data = cen_norm_data.reshape(-1, num_snapshot)
+        rom_param = {}
 
-    # perform SVD
-    V, S, U = np.linalg.svd(tall_thin_data, full_matrices=False)
+        training_data_cons = reshape_func.assemble_snapshots(solver_param)
 
-    # POD residual energy check
-    square_sum_singular_values = np.sum(S**2)
-    cumulative_energy          = np.cumsum(S**2)
-    POD_res_energy = (1 - (cumulative_energy / square_sum_singular_values)) * 100
+        # number of snapshot
+        num_snapshot = len(training_data_cons[0,0,:])
 
-    POD_energy_limit = 100-solver_param['pod_energy'] 
+        # reference profile
+        q_ref = training_data_cons[:,:,0]
 
-    truncation_indx = np.where(np.array(POD_res_energy) < POD_energy_limit)[0][0]
+        # center data 
+        centered_data = training_data_cons - q_ref[:,:,np.newaxis]
 
-    # finalize the LINEAR basis
-    basis = V[:,0:truncation_indx]
+        # normalizing factors
+        l2_factors         = np.sqrt(np.sum(centered_data**2, axis=2))
+        norm_factor        = np.mean(l2_factors, axis=1)
 
-    # wrap up and exit the function
-    denormalizor = np.repeat(norm_factor, solver_param['cell_number'])
-    normalizor   = 1/denormalizor
+        # centered_normalized data
+        cen_norm_data = centered_data / norm_factor[:, np.newaxis, np.newaxis]
 
-    rom_param['basis']                = basis
-    rom_param['q_ref']                = q_ref.ravel()
-    rom_param['norm']                 = normalizor
-    rom_param['denorm']               = denormalizor
-    rom_param['cent_norm_train_data'] = tall_thin_data
-    rom_param['qr0']                  = basis.T @ tall_thin_data[:,0]
+        # data matrix
+        tall_thin_data = cen_norm_data.reshape(-1, num_snapshot)
 
-    # Create QUADRATIC Basis
-    reg_fact = 1
+        # perform SVD
+        V, S, U = np.linalg.svd(tall_thin_data, full_matrices=False)
 
-    QR = basis.T @ tall_thin_data
+        # POD residual energy check
+        square_sum_singular_values = np.sum(S**2)
+        cumulative_energy          = np.cumsum(S**2)
+        POD_res_energy = (1 - (cumulative_energy / square_sum_singular_values)) * 100
 
-    r, k = QR.shape
-    iu = np.triu_indices(r)  # indices of upper triangle (including diag)
+        POD_energy_limit = 100-solver_param['pod_energy'] 
 
-    kron_prod = np.empty((len(iu[0]), k))
+        truncation_indx = np.where(np.array(POD_res_energy) < POD_energy_limit)[0][0]
 
-    for j in range(k):
-        s = QR[:, j]
-        kron = np.outer(s, s)           # r x r symmetric
-        kron_prod[:, j] = kron[iu]      # extract unique entries
+        # finalize the LINEAR basis
+        basis = V[:,0:truncation_indx]
 
-    epsilon   = tall_thin_data - (basis @ basis.T @ tall_thin_data)
+        # wrap up and exit the function
+        denormalizor = np.repeat(norm_factor, solver_param['cell_number'])
+        normalizor   = 1/denormalizor
 
-    WWT        = kron_prod @ kron_prod.T
-    np.fill_diagonal(WWT, WWT.diagonal() + reg_fact)
+        rom_param['basis']                = basis
+        rom_param['q_ref']                = q_ref.ravel()
+        rom_param['norm']                 = normalizor
+        rom_param['denorm']               = denormalizor
+        rom_param['cent_norm_train_data'] = tall_thin_data
+        rom_param['qr0']                  = basis.T @ tall_thin_data[:,0]
 
-    from scipy.linalg import solve
+        # Create QUADRATIC Basis
+        reg_fact = 1
 
-    tmp         = epsilon @ kron_prod.T        # reduces dimension first
-    quad_basis  = solve(WWT, tmp.T, assume_a='sym').T
+        QR = basis.T @ tall_thin_data
 
-    rom_param['quad_basis'] = quad_basis
+        r, k = QR.shape
+        iu = np.triu_indices(r)  # indices of upper triangle (including diag)
+
+        kron_prod = np.empty((len(iu[0]), k))
+
+        for j in range(k):
+            s = QR[:, j]
+            kron = np.outer(s, s)           # r x r symmetric
+            kron_prod[:, j] = kron[iu]      # extract unique entries
+
+        epsilon   = tall_thin_data - (basis @ basis.T @ tall_thin_data)
+
+        WWT        = kron_prod @ kron_prod.T
+        np.fill_diagonal(WWT, WWT.diagonal() + reg_fact)
+
+        from scipy.linalg import solve
+
+        tmp         = epsilon @ kron_prod.T        # reduces dimension first
+        quad_basis  = solve(WWT, tmp.T, assume_a='sym').T
+
+        rom_param['quad_basis'] = quad_basis
 
     return rom_param
 

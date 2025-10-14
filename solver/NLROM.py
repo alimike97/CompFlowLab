@@ -9,65 +9,95 @@ def precomputer(solver_param):
 
     print('Initializing ROM')
 
-    rom_param = {}
+    # rom params are already precomputed so we will only load them
+    if solver_param['rom_basis_generate']:
 
-    training_data_cons = reshape_func.assemble_snapshots(solver_param)
+        print('Loading precomputed variables ...')
 
-    # number of snapshot
-    num_snapshot = len(training_data_cons[0,0,:])
+        rom_param = {}
 
-    # reference profile
-    q_ref = training_data_cons[:,:,0]
+        rom_param['basis']   = np.load(os.path.join(solver_param['rom_basis_dir'],'basis.npy'))
+        rom_param['basis']   = np.load(os.path.join(solver_param['rom_basis_dir'],'basis.npy'))
+        rom_param['q_ref']   = np.load(os.path.join(solver_param['rom_basis_dir'],'q_ref.npy'))
+        rom_param['norm']    = np.load(os.path.join(solver_param['rom_basis_dir'],'norm.npy'))
+        rom_param['denorm']  = np.load(os.path.join(solver_param['rom_basis_dir'],'denorm.npy'))
+        rom_param['qr0']     = np.load(os.path.join(solver_param['rom_basis_dir'],'qr0.npy'))
 
-    # center data 
-    centered_data = training_data_cons - q_ref[:,:,np.newaxis]
+        rom_param['basis']              = np.load(os.path.join(solver_param['rom_basis_dir'],'basis.npy'))
+        rom_param['basis_discard']      = np.load(os.path.join(solver_param['rom_basis_dir'],'basis_discard.npy'))
+        rom_param['q_ref']              = np.load(os.path.join(solver_param['rom_basis_dir'],'q_ref.npy'))
+        rom_param['norm']               = np.load(os.path.join(solver_param['rom_basis_dir'],'norm.npy'))
+        rom_param['denorm']             = np.load(os.path.join(solver_param['rom_basis_dir'],'denorm.npy'))
+        rom_param['qr0']                = np.load(os.path.join(solver_param['rom_basis_dir'],'qr0.npy'))
+        rom_param['qr_train_retain']    = np.load(os.path.join(solver_param['rom_basis_dir'],'qr_retain.npy'))
+        rom_param['qr_train_discard']   = np.load(os.path.join(solver_param['rom_basis_dir'],'qr_discard.npy'))
 
-    # normalizing factors
-    l2_factors         = np.sqrt(np.sum(centered_data**2, axis=2))
-    norm_factor        = np.mean(l2_factors, axis=1)
-
-    # centered_normalized data
-    cen_norm_data = centered_data / norm_factor[:, np.newaxis, np.newaxis]
-
-    # data matrix
-    tall_thin_data = cen_norm_data.reshape(-1, num_snapshot)
-
-    # perform SVD
-    V, S, U = np.linalg.svd(tall_thin_data, full_matrices=False)
-
-    # POD residual energy check
-    square_sum_singular_values = np.sum(S**2)
-    cumulative_energy          = np.cumsum(S**2)
-    POD_res_energy = (1 - (cumulative_energy / square_sum_singular_values)) * 100
+        rom_param                       = non_linear_rom_model_trainer(solver_param,rom_param)
 
 
-    POD_energy_limit_retain  = 100-99.9
-    POD_energy_limit_discard = 100-solver_param['pod_energy'] 
+    else:
 
-    truncation_indx_retain  = np.where(np.array(POD_res_energy) < POD_energy_limit_retain )[0][0]
-    truncation_indx_discard = np.where(np.array(POD_res_energy) < POD_energy_limit_discard)[0][0]
+        print('Computing rom parameters ...')
 
-    # finalize the basis
-    basis_retain  = V[:,0:truncation_indx_retain]
-    basis_discard = V[:,truncation_indx_retain:truncation_indx_discard]
+        rom_param = {}
 
-    # wrap up and exit the function
-    denormalizor = np.repeat(norm_factor, solver_param['cell_number'])
-    normalizor   = 1/denormalizor
+        training_data_cons = reshape_func.assemble_snapshots(solver_param)
 
-    rom_param['basis']                = basis_retain
-    rom_param['basis_discard']        = basis_discard
-    rom_param['q_ref']                = q_ref.ravel()
-    rom_param['norm']                 = normalizor
-    rom_param['denorm']               = denormalizor
-    rom_param['cent_norm_train_data'] = tall_thin_data
-    rom_param['qr0']                  = basis_retain.T @ tall_thin_data[:,0]
-    rom_param['qr_train_retain']      = basis_retain.T @ tall_thin_data
-    rom_param['qr_train_discard']     = basis_discard.T @ tall_thin_data
+        # number of snapshot
+        num_snapshot = len(training_data_cons[0,0,:])
 
-    rom_param = non_linear_rom_model_trainer(solver_param,rom_param)    
+        # reference profile
+        q_ref = training_data_cons[:,:,0]
 
-    return rom_param
+        # center data 
+        centered_data = training_data_cons - q_ref[:,:,np.newaxis]
+
+        # normalizing factors
+        l2_factors         = np.sqrt(np.sum(centered_data**2, axis=2))
+        norm_factor        = np.mean(l2_factors, axis=1)
+
+        # centered_normalized data
+        cen_norm_data = centered_data / norm_factor[:, np.newaxis, np.newaxis]
+
+        # data matrix
+        tall_thin_data = cen_norm_data.reshape(-1, num_snapshot)
+
+        # perform SVD
+        V, S, U = np.linalg.svd(tall_thin_data, full_matrices=False)
+
+        # POD residual energy check
+        square_sum_singular_values = np.sum(S**2)
+        cumulative_energy          = np.cumsum(S**2)
+        POD_res_energy = (1 - (cumulative_energy / square_sum_singular_values)) * 100
+
+
+        POD_energy_limit_retain  = 100-99.9
+        POD_energy_limit_discard = 100-solver_param['pod_energy'] 
+
+        truncation_indx_retain  = np.where(np.array(POD_res_energy) < POD_energy_limit_retain )[0][0]
+        truncation_indx_discard = np.where(np.array(POD_res_energy) < POD_energy_limit_discard)[0][0]
+
+        # finalize the basis
+        basis_retain  = V[:,0:truncation_indx_retain]
+        basis_discard = V[:,truncation_indx_retain:truncation_indx_discard]
+
+        # wrap up and exit the function
+        denormalizor = np.repeat(norm_factor, solver_param['cell_number'])
+        normalizor   = 1/denormalizor
+
+        rom_param['basis']                = basis_retain
+        rom_param['basis_discard']        = basis_discard
+        rom_param['q_ref']                = q_ref.ravel()
+        rom_param['norm']                 = normalizor
+        rom_param['denorm']               = denormalizor
+        rom_param['cent_norm_train_data'] = tall_thin_data
+        rom_param['qr0']                  = basis_retain.T @ tall_thin_data[:,0]
+        rom_param['qr_train_retain']      = basis_retain.T @ tall_thin_data
+        rom_param['qr_train_discard']     = basis_discard.T @ tall_thin_data
+
+        rom_param = non_linear_rom_model_trainer(solver_param,rom_param)    
+
+        return rom_param
 
 def prepare_to_store(solver_param,state,rom_param):
 
