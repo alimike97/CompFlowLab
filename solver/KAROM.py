@@ -247,11 +247,18 @@ def advance_one_time_step(solver_param,state,physics,time_integration,rom_param=
         normalizor             = rom_param['norm']
         denormalizor           = rom_param['denorm']
 
+        sampling_adapt_freq = solver_param['unsampled_update_freq']
+
         # Q tilda (ROM) before any update
         Q_old            = state['Q_cons']
         Q_old_solver_int = reshape_func.solver_eliminate_ghost(solver_param['cell_number'],solver_param['num_state_var'],Q_old)
         
         if np.any(solver_param['iter'] == solver_param['resample_iter_list']):
+
+            # adjust the solver parameters for taking large time step FOM
+            Q_bar_star_old        = state['Q_bar']
+            solver_param['dt']    = sampling_adapt_freq * solver_param['dt']
+            state['Q_cons']       = Q_bar_star_old
 
             # take one FOM step
             solver_param['hyper'] = False
@@ -259,20 +266,30 @@ def advance_one_time_step(solver_param,state,physics,time_integration,rom_param=
             state = physics.residual_calculator(solver_param,rom_param,state)
             state = time_integration.advance_time(solver_param,rom_param,state,physics)
 
-            solver_param['hyper']   = True
-
             if solver_param['injection']: 
 
                 state = physics.injection_correction(solver_param,state)
 
-            # adapt basis with newly found sanpshot
-            Q_new_solver_full   = state['Q_cons']
+            Q_bar_star_new = state['Q_cons']
+            Q_bar_star_new_solver_int = reshape_func.solver_eliminate_ghost(solver_param['cell_number'],solver_param['num_state_var'],Q_bar_star_new)
             
-            Q_new_solver_int    = reshape_func.solver_eliminate_ghost(solver_param['cell_number'],
-                                                                        solver_param['num_state_var'],
-                                                                        Q_new_solver_full)
-            
-            rom_param = adapt_basis(solver_param,rom_param,Q_new_solver_int)
+            # update the large time step state 
+            state['Q_bar'] = Q_bar_star_new
+
+            # some sampling methods (ex. FGS) need this for sampling
+            rom_param['Q_bar'] = state['Q_bar']
+
+            # hold new solution
+            Q_bar_star_new            = state['Q_cons']
+            Q_bar_star_new_solver_int = reshape_func.solver_eliminate_ghost(solver_param['cell_number'],solver_param['num_state_var'],Q_bar_star_new)
+
+            # resote solver parameters to samller time step setup (user defined setup)
+            # Q_bar_new_sampling      = Q_bar_star_new_solver_int[rom_param['S_indx_solver']]
+            Q_bar_new_solver_int    = Q_bar_star_new_solver_int
+            solver_param['hyper']   = True
+            solver_param['dt']      = solver_param['dt'] / sampling_adapt_freq
+
+            rom_param = adapt_basis(solver_param,rom_param,Q_bar_new_solver_int)
 
             # needed for FGS
             rom_param['Q_bar'] = state['Q_cons']
