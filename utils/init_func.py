@@ -2,8 +2,10 @@ import os
 import shutil
 import numpy as np
 import cantera as ct
+from scipy.interpolate import RegularGridInterpolator
 
 from utils import reshape_func
+from utils import input_read_func
 
 def init_state(solver_param):
 
@@ -16,7 +18,14 @@ def init_state(solver_param):
         solver_param['num_prim_var']  = 4
         solver_param['num_state_var'] = 3 
 
-    else:
+    elif solver_param['gas_model'].endswith('.inp'):
+
+        solver_param['num_species']   = 1
+        solver_param['num_prim_var']  = 5
+        solver_param['num_state_var'] = 4
+        state['gas_lookup_table']     = input_read_func.read_chem_file(solver_param['gas_model'])
+
+    elif solver_param['gas_model'].endswith('.yaml'):
 
         solver_param['num_prim_var']  = 4 + solver_param['num_species']
         solver_param['num_state_var'] = solver_param['num_prim_var'] - 1 # no temp
@@ -61,7 +70,11 @@ def init_physics(solver_param):
         
         import physics.Ideal_Air as physics_module
 
-    else:
+    elif solver_param['gas_model'].endswith('.inp'):
+
+        import physics.Single_Step_Reacting_Flow as physics_module
+
+    elif solver_param['gas_model'].endswith('.yaml'):
 
         import physics.Reacting_Flow as physics_module
 
@@ -295,3 +308,5 @@ def init_dir(solver_param):
     if solver_param['save_visual']:
 
         os.makedirs( os.path.join(dir_results, 'plots')     )
+
+

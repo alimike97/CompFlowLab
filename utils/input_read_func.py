@@ -26,6 +26,32 @@ def read_input_file(args):
 
     return input_param
 
+def read_chem_file(path):
+    try:
+        with open(path, 'r') as input_file:
+            content = input_file.readlines()
+
+        chem_data = {}
+
+        for line in content:
+            line = line.strip()
+
+            if not line or line.startswith('#'):
+                continue
+            keyword_value = line.split('=', 1)
+            if len(keyword_value) == 2:
+                keyword = keyword_value[0].strip()
+                value = keyword_value[1].strip()
+                chem_data[keyword] = eval(value)
+
+    except FileNotFoundError:
+        print(f"Error: File not found.")
+
+    except IOError:
+        print(f"Error: Unable to read the file.")
+
+    return chem_data
+
 def init_solver_param(args,input_param):
 
     solver_param = {}

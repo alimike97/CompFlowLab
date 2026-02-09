@@ -2,6 +2,7 @@ import numpy as np
 import cantera as ct
 from scipy.interpolate import interp1d
 from scipy.optimize import fsolve
+from scipy.interpolate import RegularGridInterpolator
 
 
 from utils import reshape_func
@@ -23,17 +24,19 @@ def prim2cons_converter(solver_param, state):
     T   = Q_prim_user[3,:]
     Y   = Q_prim_user[4:,:]
 
-    Y_cantera = reshape_func.find_mass_fraction_full_cantera(Y)
+    Y_full=reshape_func.find_mass_fraction_full(Y)
 
-    state['gas_array'].TPY = T,P,Y_cantera
+    Cp_mix    = state['gas_lookup_table']['cp']
+    MW_mix    = state['gas_lookup_table']['MW']
+    R_mix     = state['gas_lookup_table']['R_univ'] / MW_mix
+    Cv_mix    = Cp_mix - R_mix
+    h_ref     = np.array(state['gas_lookup_table']['href'])[:,np.newaxis]
+    h_f_mix   = np.sum(h_ref * Y_full, axis=0)
 
-    internal_energy = np.squeeze(state['gas_array'].int_energy_mass)
-
-    internal_energy_tot = internal_energy + (0.5 * (vx **2))
 
     mass   = rho * vol
     momx   = rho * vx * vol
-    energy = (rho * internal_energy_tot) * vol
+    energy = rho * ((T*Cv_mix+h_f_mix) + 0.5 *(vx**2))*vol
     mass_species = rho * Y * vol
 
     state['Q_cons'] = np.vstack((mass,momx,energy,mass_species)).ravel()
@@ -51,137 +54,95 @@ def cons2prim_converter(solver_param, state):
     momx        = Q_cons_user[1,:]
     energy      = Q_cons_user[2,:]
     mass_species= Q_cons_user[3:,:]
-    
+
     rho = mass / vol
     vx  = momx / rho / vol
     MF  = mass_species / rho / vol
 
-    MF_ct = reshape_func.find_mass_fraction_full_cantera(MF)
+    Y_full=reshape_func.find_mass_fraction_full(MF)
 
-    sp_vol = 1/rho
+    Cp_mix    = state['gas_lookup_table']['cp']
+    MW_mix    = state['gas_lookup_table']['MW']
+    R_mix     = state['gas_lookup_table']['R_univ'] / MW_mix
+    Cv_mix    = Cp_mix - R_mix
+    h_ref     = np.array(state['gas_lookup_table']['href'])[:,np.newaxis]
+    h_f_mix   = np.sum(h_ref * Y_full, axis=0)
 
-    internal_energy = (energy/vol/rho)-(0.5*vx**2)
+    T  = (energy/rho/vol - (0.5 *(vx**2)) - h_f_mix) / Cv_mix
 
-    try:
-
-        state['gas_array'].UVY = internal_energy,sp_vol,MF_ct
-
-        T = np.squeeze(state['gas_array'].T)
-        P = np.squeeze(state['gas_array'].P)
-
-    except:
-
-        # sometimes rom can give shitty results but it might recover in the later time steps
-        # but when cantera gets invalid states directly raises an error and stops the whole simulation
-        # to avoid this issue I implemented this sloppy way of finding prim vars 
-        # I am just finding a coefficient (psudo Cp, Cv) that converts energy term to pressure and temperature 
-        # by looking at the previous time step solution and finally I trim the invalid results by max and min pressure
-
-        Q_prim   = state['Q_prim']
-
-        Q_prim_user = reshape_func.results_solver2user_converter(solver_param['num_prim_var'],
-                                                                solver_param['cell_number'],
-                                                                Q_prim)
-        
-        rho_spare = Q_prim_user[0,:]
-        vx_spare  = Q_prim_user[1,:]
-        P_spare   = Q_prim_user[2,:]
-        T_spare   = Q_prim_user[3,:]
-        Y_spare   = Q_prim_user[4:,:]
-        Y_spare_ct= reshape_func.find_mass_fraction_full_cantera(Y_spare)
-
-        state['gas_array'].TPY = T_spare, P_spare, Y_spare_ct
-
-        coef_temp  = np.squeeze(state['gas_array'].int_energy_mass)/T_spare
-        coef_press = np.squeeze(state['gas_array'].int_energy_mass)/P_spare
-
-        T = np.abs(internal_energy / coef_temp)
-        P = np.abs(internal_energy / coef_press)
-
-        Q_prim = np.vstack((rho,vx,P,T,MF))
-
-        P_max = np.max(P_spare)
-        P_min = np.min(P_spare)
-
-        P_max_indx = np.argmax(P_spare)
-        P_min_indx = np.argmin(P_spare)
-
-        indx_pass_max = np.where(Q_prim[2,:]>P_max)[0]
-        indx_pass_min = np.where(Q_prim[2,:]<P_min)[0]
-
-        Q_prim[:,indx_pass_max] = Q_prim_user[:,P_max_indx].reshape(-1,1)
-        Q_prim[:,indx_pass_min] = Q_prim_user[:,P_min_indx].reshape(-1,1)
-
-        rho = Q_prim_user[0,:]
-        vx  = Q_prim_user[1,:]
-        P   = Q_prim_user[2,:]
-        T   = Q_prim_user[3,:]
-        Y   = Q_prim_user[4:,:]
-
-        Y_ct= reshape_func.find_mass_fraction_full_cantera(Y)
-
-        state['gas_array'].TPY = T, P, Y_ct
-
-        internal_energy = np.squeeze(state['gas_array'].int_energy_mass)
-
-        internal_energy_tot = internal_energy + (0.5 * (vx **2))
-
-        mass   = rho * vol
-        momx   = rho * vx * vol
-        energy = (rho * internal_energy_tot) * vol
-        mass_species = rho * Y * vol
-
-        state['Q_cons'] = np.vstack((mass,momx,energy,mass_species)).ravel()
-
+    P = rho * R_mix * T
+ 
     state['Q_prim'] = np.vstack((rho,vx,P,T,MF)).ravel()
 
     return state
 
 def cache_cantera(solver_param,state):
 
-    Q_cons           = state['Q_cons']
-    Q_prim           = state['Q_prim']
 
-    Q_cons_user      = reshape_func.results_solver2user_converter(solver_param['num_state_var'],solver_param['cell_number'],Q_cons)
+    Q_prim           = state['Q_prim']
     Q_prim_user      = reshape_func.results_solver2user_converter(solver_param['num_prim_var'],solver_param['cell_number'],Q_prim)
 
-    rho    = Q_prim_user[0,:]
-    vx     = Q_prim_user[1,:]
-    press  = Q_prim_user[2,:]
-    temp   = Q_prim_user[3,:]
+    T     = Q_prim_user[3,:]
+    Y     = Q_prim_user[4:,:]
+    Y_full=reshape_func.find_mass_fraction_full(Y)
 
+    Cp_mix    = state['gas_lookup_table']['cp']
+    MW_mix    = state['gas_lookup_table']['MW']
+    R_mix     = state['gas_lookup_table']['R_univ'] / MW_mix
+    Cv_mix    = Cp_mix - R_mix
+    gamma_mix = Cp_mix/Cv_mix
+    h_ref     = np.array(state['gas_lookup_table']['href'])[:,np.newaxis]
+    h_f_mix   = np.sum(h_ref * Y_full, axis=0)
 
-    Y      = Q_prim_user[4:,:]
-    Y_ct   = reshape_func.find_mass_fraction_full_cantera(Y)
+    state['gas_cached_props'] = {}
 
-    state['gas_array'].TPY = temp,press,Y_ct
-
-    state['gas_cached_props'] = {
-        'sound_speed': np.squeeze(state['gas_array'].sound_speed),
-        'int_energy_mass': np.squeeze(state['gas_array'].int_energy_mass),
-        'enthalpy_mass': np.squeeze(state['gas_array'].enthalpy_mass),
-        'net_production_rates': state['gas_array'].net_production_rates,
-        'molecular_weights': state['gas_array'].molecular_weights,
-        'heat_release_rate': np.squeeze(state['gas_array'].heat_release_rate),
-        'cp': np.squeeze(state['gas_array'].cp),
-        'cv': np.squeeze(state['gas_array'].cv),
-    }
+    state['gas_cached_props']['sound_speed']        = np.sqrt(gamma_mix*R_mix*T)
+    state['gas_cached_props']['int_energy_mass']    = Cv_mix * T + h_f_mix
+    state['gas_cached_props']['enthalpy']           = Cp_mix * T + h_ref
+    state['gas_cached_props']['enthalpy_mix']       = Cp_mix * T + h_f_mix
+    state['gas_cached_props']['MW_mix']             = MW_mix
+    state['gas_cached_props']['cp']                 = Cp_mix
+    state['gas_cached_props']['cv']                 = Cv_mix
 
     return state
 
-def cache_roe_cantera(state,gas_array):
+def cache_roe_cantera(state,emoy,rmoy,Ymoy):
+
+    Ymoy_full = reshape_func.find_mass_fraction_full(Ymoy)
+
+    Cp_moy    = state['gas_lookup_table']['cp']
+    MW_moy    = state['gas_lookup_table']['MW']
+    R_moy     = state['gas_lookup_table']['R_univ'] / MW_moy
+    Cv_moy    = Cp_moy - R_moy
+    gamma_moy = Cp_moy/Cv_moy
+    h_ref     = np.array(state['gas_lookup_table']['href'])[:,np.newaxis]
+    h_f_moy   = np.sum(h_ref * Ymoy_full, axis=0)
+
+
+    Tmoy      = (emoy-h_f_moy) / Cv_moy
+    Pmoy      = rmoy * R_moy * Tmoy
+    cmoy      = np.sqrt(gamma_moy*R_moy*Tmoy)
+
+    enthalpies= Cp_moy*Tmoy + h_ref
+
+    dyn_vis_mix_moy = np.zeros_like(Tmoy) + state['gas_lookup_table']['mu']
+    
+    Pr   = state['gas_lookup_table']['Pr']
+
+    k_mix_moy = dyn_vis_mix_moy * Cp_moy / Pr
+
+    D_mix_moy =  k_mix_moy / rmoy / Cp_moy
 
     state['gas_roe_cached_props'] = {
-        'Pmoy': gas_array.P,
-        'Tmoy': gas_array.T,
-        'cpmoy': gas_array.cp,
-        'cmoy': gas_array.sound_speed,
-        'meanMWmoy': gas_array.mean_molecular_weight,
-        'MWmoy': gas_array.molecular_weights,
-        'partial_hmoy': gas_array.partial_molar_enthalpies / gas_array.molecular_weights,
-        'dyn_vsc_mix': gas_array.viscosity,
-        'mass_diff_mix': gas_array.mix_diff_coeffs_mass,
-        'therm_cond_mix': gas_array.thermal_conductivity,
+        'Pmoy': Pmoy,
+        'Tmoy': Tmoy,
+        'cpmoy': Cp_moy,
+        'cmoy': cmoy,
+        'MWmoy': MW_moy,
+        'dyn_vsc_mix': dyn_vis_mix_moy,
+        'therm_cond_mix': k_mix_moy,
+        'diff_mix': D_mix_moy,
+        'enthalpies': enthalpies,
     }
 
     return state
@@ -201,25 +162,17 @@ def second_order_roe_inviscid_flux_calculator(solver_param,rom_param,state):
 
 
     Y      = Q_prim_user[4:,:]
-    # Y_ct   = reshape_func.find_mass_fraction_full_cantera(Y)
 
 
     vol           = solver_param['vol']
     num_state_var = solver_param['num_state_var']
-    # num_species   = solver_param['num_species']
 
-    # total energy (rho * e_t)
+
     en               = Q_cons_user[2,:] / vol
-
-    # state['gas_array'].TPY = temp,press,Y_ct
-
-    # c       = np.squeeze(state['gas_array'].sound_speed)
-    # int_en  = np.squeeze(state['gas_array'].int_energy_mass)
-    # h       = np.squeeze(state['gas_array'].enthalpy_mass)
 
     c       = state['gas_cached_props']['sound_speed']
     int_en  = state['gas_cached_props']['int_energy_mass']
-    h       = state['gas_cached_props']['enthalpy_mass']
+    h       = state['gas_cached_props']['enthalpy_mix']
 
     # total enthalpy
     htot = h + (0.5*(vx**2))
@@ -265,7 +218,7 @@ def second_order_roe_inviscid_flux_calculator(solver_param,rom_param,state):
 
         diss_matrix = np.zeros((2*len(S_indx_user),num_state_var,num_state_var))
 
-        gas_array = ct.SolutionArray(state['gas'],2*len(S_indx_user))
+        # gas_array = ct.SolutionArray(state['gas'],2*len(S_indx_user))
 
     else : 
         
@@ -297,7 +250,7 @@ def second_order_roe_inviscid_flux_calculator(solver_param,rom_param,state):
 
         diss_matrix = np.zeros((cell_num-1,num_state_var,num_state_var))
 
-        gas_array = ct.SolutionArray(state['gas'],cell_num-1)
+        # gas_array = ct.SolutionArray(state['gas'],cell_num-1)
     
     R   = np.sqrt(rho_right/rho_left)
 
@@ -308,19 +261,20 @@ def second_order_roe_inviscid_flux_calculator(solver_param,rom_param,state):
     hmoy=Hmoy - (0.5*umoy*umoy)
     Ymoy=(R*Y_right+Y_left)/(R+1)                  
 
-    Ymoy_ct = reshape_func.find_mass_fraction_full_cantera(Ymoy)
+    # Ymoy_ct = reshape_func.find_mass_fraction_full_cantera(Ymoy)
 
-    gas_array.UVY = emoy,1/rmoy,Ymoy_ct
 
-    state = cache_roe_cantera(state,gas_array)
+    state = cache_roe_cantera(state,emoy,rmoy,Ymoy)
 
     Pmoy         = state['gas_roe_cached_props']['Pmoy']
     Tmoy         = state['gas_roe_cached_props']['Tmoy']
     cpmoy        = state['gas_roe_cached_props']['cpmoy']
     cmoy         = state['gas_roe_cached_props']['cmoy']
-    meanMWmoy    = state['gas_roe_cached_props']['meanMWmoy']
-    MWmoy        = state['gas_roe_cached_props']['MWmoy']
-    partial_hmoy = state['gas_roe_cached_props']['partial_hmoy']
+
+    # MWmoy        = state['gas_cached_props']['molecular_weights']
+    meanMWmoy    = state['gas_roe_cached_props']['MWmoy']
+    partial_hmoy = state['gas_roe_cached_props']['enthalpies'].T
+
         
     d_rho_d_press = rmoy / Pmoy
     d_rho_d_temp = -rmoy/Tmoy
@@ -330,8 +284,8 @@ def second_order_roe_inviscid_flux_calculator(solver_param,rom_param,state):
     #     for sp in range(len(Ymoy)):
 
     #         d_rho_d_mass_frac[sp] = rmoy*meanMWmoy*(1/MWmoy[-1] - 1/MWmoy[sp])
-    d_rho_d_mass_frac_const_term =  (1/MWmoy[-1] - 1/MWmoy[:-1])
-    d_rho_d_mass_frac = rmoy * meanMWmoy * d_rho_d_mass_frac_const_term[:,np.newaxis]
+    d_rho_d_mass_frac_const_term =  0
+    d_rho_d_mass_frac = rmoy * meanMWmoy * d_rho_d_mass_frac_const_term
 
     d_enth_d_press = 0
     d_enth_d_temp  = cpmoy
@@ -345,7 +299,7 @@ def second_order_roe_inviscid_flux_calculator(solver_param,rom_param,state):
     #     # Gamma terms for energy equation
     g_press     = rmoy * d_enth_d_press + d_rho_d_press * Hmoy - 1.0
     g_temp      = rmoy * d_enth_d_temp + d_rho_d_temp * Hmoy
-    g_mass_frac = rmoy[:,np.newaxis] * d_enth_d_mass_frac + Hmoy[:,np.newaxis] * d_rho_d_mass_frac.T
+    g_mass_frac = rmoy[:,np.newaxis] * d_enth_d_mass_frac + Hmoy[:,np.newaxis] * d_rho_d_mass_frac[:,None]
 
     #     # Characteristic speeds
     lambda1 = umoy + cmoy
@@ -386,12 +340,12 @@ def second_order_roe_inviscid_flux_calculator(solver_param,rom_param,state):
     diss_matrix[: , 0 , 0 ] = phi_star
     diss_matrix[: , 0 , 1 ] = beta_star
     diss_matrix[: , 0 , 2 ] = vel_abs * d_rho_d_temp
-    diss_matrix[: , 0 , 3:] = vel_abs[:,np.newaxis] * d_rho_d_mass_frac.T
+    diss_matrix[: , 0 , 3:] = (vel_abs* d_rho_d_mass_frac)[:,None]
 
     diss_matrix[: , 1 , 0 ] = umoy * phi_star + r_roe
     diss_matrix[: , 1 , 1 ] = umoy * beta_star + m
     diss_matrix[: , 1 , 2 ] = umoy * vel_abs * d_rho_d_temp
-    diss_matrix[: , 1 , 3:] = (umoy * vel_abs)[:,np.newaxis] * d_rho_d_mass_frac.T
+    diss_matrix[: , 1 , 3:] = ((umoy * vel_abs) * d_rho_d_mass_frac)[:,None]
 
     diss_matrix[: , 2 , 0 ] = phi_e + r_roe * umoy
     diss_matrix[: , 2 , 1 ] = beta_e + e
@@ -408,10 +362,10 @@ def second_order_roe_inviscid_flux_calculator(solver_param,rom_param,state):
     
     diag_mask = idx_out == idx_in
 
-    off_diag = vel_abs[:,np.newaxis] * Ymoy.T * d_rho_d_mass_frac.T
+    off_diag = vel_abs[:,None] * Ymoy.T * d_rho_d_mass_frac[:,None]
     off_diag = np.repeat(off_diag[:,:,np.newaxis],np.shape(off_diag)[1],axis=2)
 
-    diag = vel_abs[:,np.newaxis] * (rmoy[:,np.newaxis] + Ymoy.T * d_rho_d_mass_frac.T)
+    diag = vel_abs[:,np.newaxis] * (rmoy[:,np.newaxis] + Ymoy.T * d_rho_d_mass_frac[:,None])
 
     diss_matrix[:,3:,3:] = off_diag
     diss_matrix[:,3:,3:][:,diag_mask] = diag
@@ -439,9 +393,6 @@ def second_order_roe_inviscid_flux_calculator(solver_param,rom_param,state):
 
 def second_order_roe_inviscid_flux_calculator_for(solver_param,rom_param,state):
     
-    state            = cons2prim_converter(solver_param,state)
-    state            = bc_func.update_ghost_cell(solver_param,state)
-
     Q_cons           = state['Q_cons']
     Q_prim           = state['Q_prim']
 
@@ -466,11 +417,11 @@ def second_order_roe_inviscid_flux_calculator_for(solver_param,rom_param,state):
     # total energy (rho * e_t)
     en               = Q_cons_user[2,:] / vol
 
-    state['gas_array'].TPY = temp,press,Y_ct
+    # state['gas_array'].TPY = temp,press,Y_ct
 
-    c       = state['gas_cached_props']['sound_speed']
+    c       = state['gas_cached_props']['sound_speed']    
     int_en  = state['gas_cached_props']['int_energy_mass']
-    h       = state['gas_cached_props']['enthalpy_mass']
+    h       = state['gas_cached_props']['enthalpy_mix']       
 
     # breakpoint()
 
@@ -513,17 +464,24 @@ def second_order_roe_inviscid_flux_calculator_for(solver_param,rom_param,state):
         hmoy=Hmoy - (0.5*umoy*umoy)
         Ymoy=(R*Y[:,j+1]+Y[:,j])/(R+1)                  
 
-        Ymoy_ct = reshape_func.find_mass_fraction_full_cantera(Ymoy.reshape(-1,1))
+        Ymoy_full= reshape_func.find_mass_fraction_full(Ymoy)
 
-        state['gas'].UVY = emoy,1/rmoy,Ymoy_ct
+        Cp_moy       = state['gas_lookup_table']['cp']
+        MW_moy       = state['gas_lookup_table']['MW']
+        R_moy        = state['gas_lookup_table']['R_univ'] / MW_moy
+        Cv_moy       = Cp_moy - R_moy
+        gamma_moy    = Cp_moy/Cv_moy
+        h_ref        = np.array(state['gas_lookup_table']['href'])[:,np.newaxis]
+        h_f_moy      = np.sum(h_ref * Ymoy_full, axis=0)
 
-        Pmoy         = state['gas'].P
-        Tmoy         = state['gas'].T
-        cpmoy        = state['gas'].cp
-        cmoy         = state['gas'].sound_speed
-        meanMWmoy    = state['gas'].mean_molecular_weight
-        MWmoy        = state['gas'].molecular_weights
-        partial_hmoy = state['gas'].partial_molar_enthalpies / MWmoy
+
+        Tmoy         = (emoy-h_f_moy) / Cv_moy
+        Pmoy         = rmoy * R_moy * Tmoy
+        cpmoy        = Cp_moy
+        cmoy         = np.sqrt(gamma_moy*R_moy*Tmoy)
+        meanMWmoy    = state['gas_lookup_table']['MW']
+        MWmoy        = state['gas_lookup_table']['MW']
+        partial_hmoy = Cp_moy*Tmoy + h_ref
         
         d_rho_d_press = rmoy / Pmoy
         d_rho_d_temp = -rmoy/Tmoy
@@ -532,7 +490,7 @@ def second_order_roe_inviscid_flux_calculator_for(solver_param,rom_param,state):
 
         for sp in range(len(Ymoy)):
 
-            d_rho_d_mass_frac[sp] = rmoy*meanMWmoy*(1/MWmoy[-1] - 1/MWmoy[sp])
+            d_rho_d_mass_frac[sp] = 0
 
         d_enth_d_press = 0
         d_enth_d_temp = cpmoy
@@ -652,7 +610,7 @@ def second_order_roe_viscous_flux_calculator(solver_param,rom_param,state):
 
     c       = state['gas_cached_props']['sound_speed']
     int_en  = state['gas_cached_props']['int_energy_mass']
-    h       = state['gas_cached_props']['enthalpy_mass']
+    h       = state['gas_cached_props']['enthalpy_mix']
 
     # total enthalpy
     htot = h + (0.5*(vx**2))
@@ -753,12 +711,10 @@ def second_order_roe_viscous_flux_calculator(solver_param,rom_param,state):
     # gas_array                   = state['gas_array_roe']
 
     dyn_vsc_mix                 = state['gas_roe_cached_props']['dyn_vsc_mix']
-    mass_diff_mix               = state['gas_roe_cached_props']['mass_diff_mix']
     therm_cond_mix              = state['gas_roe_cached_props']['therm_cond_mix']
+    enthalpies                  = state['gas_roe_cached_props']['enthalpies']
+    mass_diff_mix               = state['gas_roe_cached_props']['diff_mix'][:,None]
 
-    MW                          = state['gas_roe_cached_props']['MWmoy']
-    MW_mix                      = state['gas_roe_cached_props']['meanMWmoy']
-    enthalpies                  = state['gas_roe_cached_props']['partial_hmoy']
 
     du_dx = (vx_right - vx_left) /dx
     dT_dx = (temp_right - temp_left) /dx
@@ -770,21 +726,21 @@ def second_order_roe_viscous_flux_calculator(solver_param,rom_param,state):
 
     tau       = 4/3 * dyn_vsc_mix * du_dx
 
-    q         = -therm_cond_mix * dT_dx + rmoy*np.sum(enthalpies*diff_vel*Ymoy_ct[0,:,:],axis=1)
+    q         = -therm_cond_mix * dT_dx + rmoy*np.sum(enthalpies.T*diff_vel*Ymoy_ct[0,:,:],axis=1)
 
     if solver_param['hyper'] == True:
 
         flux[0 ,range_flux_right] = 0 
         flux[1 ,range_flux_right] = tau
         flux[2 ,range_flux_right] = (umoy * tau) - q
-        flux[3:,range_flux_right] = (rmoy[:,np.newaxis]*mass_diff_mix[:,:-1]*dY_dx[:-1].T).T-(rmoy*corr_vel*Ymoy)
+        flux[3:,range_flux_right] = (rmoy[:,np.newaxis]*mass_diff_mix*dY_dx[:-1].T).T-(rmoy*corr_vel*Ymoy)
 
     else: 
 
         flux[0 ,1:-1] = 0 
         flux[1 ,1:-1] = tau
         flux[2 ,1:-1] = (umoy * tau) - q
-        flux[3:,1:-1] = (rmoy[:,np.newaxis]*mass_diff_mix[:,:-1]*dY_dx[:-1].T).T-(rmoy*corr_vel*Ymoy)
+        flux[3:,1:-1] = (rmoy[:,np.newaxis]*mass_diff_mix*dY_dx[:-1].T).T-(rmoy*corr_vel*Ymoy)
 
         
     state['flux_visc_cons'] = flux
@@ -822,11 +778,11 @@ def second_order_roe_viscous_flux_calculator_for(solver_param,rom_param,state):
     # total energy (rho * e_t)
     en               = Q_cons_user[2,:] / vol
 
-    state['gas_array'].TPY = temp,press,Y_ct
+    # state['gas_array'].TPY = temp,press,Y_ct
 
-    c       = np.squeeze(state['gas_array'].sound_speed)
-    int_en  = np.squeeze(state['gas_array'].int_energy_mass)
-    h       = np.squeeze(state['gas_array'].enthalpy_mass)
+    c       = state['gas_cached_props']['sound_speed']
+    int_en  = state['gas_cached_props']['int_energy_mass']
+    h       = state['gas_cached_props']['enthalpy_mix']
 
     # total enthalpy
     htot = h + (0.5*(vx**2))
@@ -860,19 +816,26 @@ def second_order_roe_viscous_flux_calculator_for(solver_param,rom_param,state):
         hmoy=(R*h[j+1]+h[j])/(R+1);                     # {hat h}_{j+1/2}
         emoy=(R*int_en[j+1]+int_en[j])/(R+1);           # {hat e}_{j+1/2}
         Ymoy=(R*Y[:,j+1]+Y[:,j])/(R+1);                 # {hat Y}_{j+1/2}          
-        Pmoy = (hmoy - emoy)*rmoy                       # {hat P}_{j+1/2}
 
-        Ymoy_full = np.squeeze( reshape_func.find_mass_fraction_full(Ymoy.reshape(-1,1)) )
+        Ymoy_full = reshape_func.find_mass_fraction_full(Ymoy)
 
-        state['gas'].UVY            = emoy,1/rmoy,Ymoy_full
+        # state['gas'].UVY            = emoy,1/rmoy,Ymoy_full
 
-        dyn_vsc_mix                 = state['gas'].viscosity
-        mass_diff_mix               = state['gas'].mix_diff_coeffs_mass
-        therm_cond_mix              = state['gas'].thermal_conductivity
-
-        MW                          = state['gas'].molecular_weights
-        MW_mix                      = state['gas'].mean_molecular_weight
-        enthalpies                  = state['gas'].partial_molar_enthalpies / MW
+        Cp_moy              = state['gas_lookup_table']['cp']
+        MW_moy              = state['gas_lookup_table']['MW']
+        R_moy               = state['gas_lookup_table']['R_univ'] / MW_moy
+        Cv_moy              = Cp_moy - R_moy
+        gamma_moy           = Cp_moy/Cv_moy
+        h_ref               = np.array(state['gas_lookup_table']['href'])[:,np.newaxis]
+        h_f_moy             = np.sum(h_ref * Ymoy_full, axis=0)
+            
+        Tmoy                = (emoy-h_f_moy) / Cv_moy
+        Pr                  = state['gas_lookup_table']['Pr']
+        dyn_vsc_mix         = state['gas_lookup_table']['mu']
+        therm_cond_mix      = dyn_vsc_mix * Cp_moy / Pr
+        mass_diff_mix       = therm_cond_mix / rmoy / Cp_moy
+        # MW_mix              = state['gas'].mean_molecular_weight
+        enthalpies          = Cp_moy*Tmoy + h_ref
 
 
         du_dx = (vx[j+1] - vx[j]) /dx
@@ -881,7 +844,7 @@ def second_order_roe_viscous_flux_calculator_for(solver_param,rom_param,state):
 
         corr_vel  = np.sum(mass_diff_mix*dY_dx)
 
-        diff_vel  = -mass_diff_mix*dY_dx/Ymoy_full + corr_vel
+        diff_vel  = -mass_diff_mix*dY_dx[:,np.newaxis]/Ymoy_full + corr_vel
 
         tau       = 4/3 * dyn_vsc_mix * du_dx
 
@@ -890,7 +853,7 @@ def second_order_roe_viscous_flux_calculator_for(solver_param,rom_param,state):
         flux[0,j+1] = 0 
         flux[1,j+1] = tau
         flux[2,j+1] = (umoy * tau) - q
-        flux[3:,j+1]= (rmoy*mass_diff_mix[:-1]*dY_dx[:-1])-(rmoy*corr_vel*Ymoy)
+        flux[3:,j+1]= (rmoy*mass_diff_mix*dY_dx[:-1])-(rmoy*corr_vel*Ymoy)
 
     state['flux_visc_cons'] = flux
 
@@ -939,7 +902,7 @@ def injection_correction(solver_param,state):
     P           = Q_prim_user[2,:]
     T           = Q_prim_user[3,:]
     Y           = Q_prim_user[4:,:]
-    Y_ct        = reshape_func.find_mass_fraction_full_cantera(Y)
+    Y_full      = reshape_func.find_mass_fraction_full(Y)
 
     vol         = solver_param['vol']
 
@@ -947,16 +910,13 @@ def injection_correction(solver_param,state):
     add_indx    = state['injection_add_final']
     sub_indx    = state['injection_sub_init'] 
 
+    # HR          = state['heat_release']
+
     indx_init   = np.argmax(np.abs(u)) - sub_indx
     indx_final  = indx_init + add_indx
     detonation  = np.arange(indx_init,indx_final)%(solver_param['cell_number']+4)
     inj_indx    = np.arange(0,solver_param['cell_number']+4,1)
     inj_indx    = inj_indx[~np.isin(inj_indx,detonation)]
-
-    # create mixed gas state
-    # gas_array_current  = ct.SolutionArray(state['gas'],(1,len(inj_indx)))
-    gas_array_inject   = ct.SolutionArray(state['gas'],(1,len(inj_indx)))
-    gas_array_mix      = ct.SolutionArray(state['gas'],(1,len(inj_indx)))
 
     # compute injected fluid properties 
     # ref: properties before entering to injector
@@ -966,8 +926,10 @@ def injection_correction(solver_param,state):
     v_in            = solver_param['injcetion_prim_state'][1]
     P_in            = solver_param['injcetion_prim_state'][2]
     T_in            = solver_param['injcetion_prim_state'][3]
-    Y_in            = solver_param['injcetion_prim_state'][4:] 
-
+    # Y_in            = solver_param['injcetion_prim_state'][4:] 
+    Y_in            = 1
+    Y_in_full       = Y_in + np.zeros_like(Y_full)
+    Y_in_full[1,:]  = 0
 
     # compute injection rate 
     area_in     = solver_param['injector_face_area']
@@ -978,90 +940,82 @@ def injection_correction(solver_param,state):
     total_mass  = mass_current+mass_in
 
     # species mass conservation
-    partial_mass_current = mass_current    * Y_ct[0,:,:].T
-    partial_mass_inject  = mass_in * Y_in
+    partial_mass_current = mass_current    * Y
+    partial_mass_inject  = mass_in         * Y_in
     Y_mix                = (partial_mass_current + partial_mass_inject) / total_mass
-
-    # moment conservation
-    # vx_mix       = (rho_in * 0.01 + rho * u)/(rho_in + rho)
-
+    Y_mix_full           = reshape_func.find_mass_fraction_full(Y_mix)
 
     # energy conservation
-    # gas_array_current.TPY = T[inj_indx], P[inj_indx], Y_ct[0,inj_indx]
-    gas_array_inject.TPY  = T_in,P_in,Y_in.T
+    h_ref     = np.array(state['gas_lookup_table']['href'])[:,np.newaxis]
+    h_f_in    = np.sum(h_ref * Y_in_full , axis=0)
+    h_f_mix   = np.sum(h_ref * Y_mix_full, axis=0)
+    cv        = state['gas_cached_props']['cv']
 
-    # int_energy_current    = np.squeeze(gas_array_current.int_energy_mass)
     int_energy_current    = state['gas_cached_props']['int_energy_mass'][inj_indx]
-    int_energy_in         = np.squeeze(gas_array_inject.int_energy_mass)
+    int_energy_in         = np.zeros_like(T[inj_indx]) + cv * T_in + h_f_in[inj_indx]
 
-    int_energy_mix        = (mass_current[inj_indx] * int_energy_current + mass_in * int_energy_in)/total_mass[inj_indx]
-    vol_inj               = mass_in / gas_array_inject.density
+    int_energy_mix        = ((mass_current[inj_indx] * int_energy_current) + (mass_in * int_energy_in))/total_mass[inj_indx]
+    vol_inj               = mass_in / rho_in
     total_volume          = vol + vol_inj
     sp_volume_mix         = total_volume / total_mass[inj_indx]
 
-    gas_array_mix.UVY     = int_energy_mix,sp_volume_mix,Y_mix[:,inj_indx].T
-
-    internal_energy       = np.squeeze(gas_array_mix.int_energy_mass)
-
-    internal_energy_tot   = internal_energy + (0.5 * (u[inj_indx] **2))
-
     # mass conservation 
-    rho_mix = np.squeeze(gas_array_mix.density)
-    Y_mix   = gas_array_mix.Y[0,:,:-1].T
+    rho_mix = 1 / sp_volume_mix
+
+    # Pressure and Temperature of mix
+    MW_mix= state['gas_lookup_table']['MW']
+    R_mix = state['gas_lookup_table']['R_univ'] / MW_mix
+    T_mix = (int_energy_mix - h_f_mix[inj_indx])/cv
+    # T_mix[T_mix<T_in] = T_in
+    P_mix = rho_mix * R_mix * T_mix
 
     # momentum conservation using isentropic
-    cp                               = state['gas_cached_props']['cp'][inj_indx]
-    cv                               = state['gas_cached_props']['cv'][inj_indx]
-    gamma_current                    = cp/cv
+    gamma_current                    = state['gas_cached_props']['cp']/state['gas_cached_props']['cv']
     speed_sound_current              = state['gas_cached_props']['sound_speed'][inj_indx]
     mach_current                     = u[inj_indx]/speed_sound_current
     P_tot_current                    = P[inj_indx] * (1+(gamma_current-1)/2*mach_current**2)**((gamma_current-1)/gamma_current)
     P_tot_mix                        = P_tot_current
 
-    P_mix                            = np.squeeze(gas_array_mix.P)
-    speed_sound_mix                  = np.squeeze(gas_array_mix.sound_speed)
-    gamma_mix                        = np.squeeze(gas_array_mix.cp/gas_array_mix.cv)
+    gamma_mix                        = gamma_current
+    speed_sound_mix                  = np.sqrt(gamma_mix * R_mix * T_mix)
     pressure_ratio                   = P_tot_mix/P_mix
     pressure_ratio[pressure_ratio<1] = 1
-
-    mach_mix                         = np.sqrt(2/(gamma_current-1)*((pressure_ratio)**((gamma_mix-1)/gamma_mix)-1))
-
-
+    mach_mix                         = np.sqrt(2/(gamma_mix-1)*((pressure_ratio)**((gamma_mix-1)/gamma_mix)-1))
     u_mix                            = mach_mix * speed_sound_mix
 
     # replace the influenced cells states
     mass         = rho_mix * vol
     momx         = rho_mix * u_mix * vol
-    energy       = (rho_mix * internal_energy_tot) * vol
-    mass_species = rho_mix * Y_mix * vol
+    energy       = rho_mix * ((T_mix*cv+h_f_mix[inj_indx]) + 0.5 *(u_mix**2))*vol
+    mass_species = rho_mix * Y_mix[0,inj_indx] * vol
 
     Q_cons_inject= np.vstack((mass,momx,energy,mass_species))
 
     Q_cons_user[:,inj_indx] = Q_cons_inject
 
-    # smoothing_start_indx = (detonation[0]-10)%(solver_param['cell_number']+4) 
-    # smoothing_end_indx   = (detonation[0]+10)%(solver_param['cell_number']+4) 
+    smoothing_start_indx = (detonation[0]-10)%(solver_param['cell_number']+4) 
+    smoothing_end_indx   = (detonation[0]+10)%(solver_param['cell_number']+4) 
 
-    # q_left  = Q_cons_user[:,smoothing_start_indx] 
-    # q_right = Q_cons_user[:,smoothing_end_indx]
+    q_left  = Q_cons_user[:,smoothing_start_indx] 
+    q_right = Q_cons_user[:,smoothing_end_indx]
 
-    # x_knwon = np.array([0,20]) 
-    # y_known = np.array([q_left,q_right]).T 
-    # f_interp = interp1d(x_knwon,y_known,kind='linear') 
-    # x = np.arange(0,20) 
-    # q_ramp = f_interp(x) 
+    x_knwon = np.array([0,20]) 
+    y_known = np.array([q_left,q_right]).T 
+    f_interp = interp1d(x_knwon,y_known,kind='linear') 
+    x = np.arange(0,20) 
+    q_ramp = f_interp(x) 
 
-    # if smoothing_start_indx < smoothing_end_indx: 
-    #     Q_cons_user[:, smoothing_start_indx:smoothing_end_indx] = q_ramp 
+    if smoothing_start_indx < smoothing_end_indx: 
+        Q_cons_user[:, smoothing_start_indx:smoothing_end_indx] = q_ramp 
         
-    # else: 
-    #     wrap_len = (solver_param['cell_number']+4) - smoothing_start_indx 
-    #     Q_cons_user[:, smoothing_start_indx:] = q_ramp[:, :wrap_len] 
-    #     Q_cons_user[:, :smoothing_end_indx]   = q_ramp[:, wrap_len:]
+    else: 
+        wrap_len = (solver_param['cell_number']+4) - smoothing_start_indx 
+        Q_cons_user[:, smoothing_start_indx:] = q_ramp[:, :wrap_len] 
+        Q_cons_user[:, :smoothing_end_indx]   = q_ramp[:, wrap_len:]
 
-    # # --- Reapply periodic BCs to maintain consistency ---
-    # Q_cons_user[:, 0:2] = Q_cons_user[:, -4:-2]   # left ghosts
-    # Q_cons_user[:, -2:] = Q_cons_user[:, 2:4]  # right ghosts
+    # --- Reapply periodic BCs to maintain consistency ---
+    Q_cons_user[:, 0:2] = Q_cons_user[:, -4:-2]   # left ghosts
+    Q_cons_user[:, -2:] = Q_cons_user[:, 2:4]  # right ghosts
 
     ncell_total = solver_param['cell_number'] + 4  # Total cells including ghosts
     ncell_interior = solver_param['cell_number']   # Interior cells only
@@ -1133,7 +1087,6 @@ def source_calculator(solver_param,rom_param,state):
 
     # load the basic information
     Q_cons           = state['Q_cons']
-    # state            = cons2prim_converter(solver_param,state)
     Q_prim           = state['Q_prim']
     Q_cons_user      = reshape_func.results_solver2user_converter(solver_param['num_state_var'],solver_param['cell_number'],Q_cons)
     Q_prim_user      = reshape_func.results_solver2user_converter(solver_param['num_prim_var'],solver_param['cell_number'],Q_prim)
@@ -1144,26 +1097,44 @@ def source_calculator(solver_param,rom_param,state):
     temp             = Q_prim_user[3,:]
     Y                = Q_prim_user[4:,:]
 
-    Y_ct             = reshape_func.find_mass_fraction_full_cantera(Y)
+    Y_full             = reshape_func.find_mass_fraction_full(Y)
 
     vol              = solver_param['vol']
     num_state_var    = solver_param['num_state_var']
 
-    # state['gas_array'].TPY = temp,press,Y_ct
+    h_ref     = np.array(state['gas_lookup_table']['href'])[:,np.newaxis]
 
-    # net_production_rate_ct = state['gas_array'].net_production_rates
-    # MW_species             = state['gas_array'].molecular_weights
-    # state['heat_release']  = np.squeeze(state['gas_array'].heat_release_rate)
-    # state['int_energy']    = np.squeeze(state['gas_array'].int_energy_mass)
 
-    net_production_rate_ct = state['gas_cached_props']['net_production_rates']
-    MW_species             = state['gas_cached_props']['molecular_weights']
-    state['heat_release']  = state['gas_cached_props']['heat_release_rate']
+    A = state['gas_lookup_table']['A']
+    Ea= state['gas_lookup_table']['Ea']
+    n = state['gas_lookup_table']['n']
+
+    MW = state['gas_lookup_table']['MW']
+    Ru = state['gas_lookup_table']['R_univ'] / 1000
+
+    reactant_concent = (rho * Y) / MW
+
+    k = A * (temp**n) * np.exp(-Ea / (Ru * temp))
+
+    q = k * reactant_concent
+    
+    w_r = MW * -1 * q
+
+    w_p = MW * +1 * q
+
+    w   = np.vstack((w_r,w_p))
+
+    ################################################################
+
     state['int_energy']    = state['gas_cached_props']['int_energy_mass']
+    state['heat_release']  = - np.sum(w*h_ref,axis=0) 
 
     source_terms   = np.zeros((solver_param['num_state_var'] , solver_param['cell_number'] + 4))
 
-    source_terms[3:,:]   = (net_production_rate_ct[0,:,:-1] * MW_species[:-1] * vol).T
+    # source_terms[3:,:]   = (net_production_rate_R * MW * vol).T
+    # source_terms[3:,:]   = reaction_source[0,:]/
+    # source_terms[3:,:]   = reaction_source
+    source_terms[3:,:]   = w_r * vol
 
     state['source_terms'] = source_terms.ravel()
 

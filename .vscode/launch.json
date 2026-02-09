@@ -14,7 +14,7 @@
             "console": "integratedTerminal",
             "args": [
                 "c:\\GIT_Fork\\ROMify\\examples\\1D_RDE",
-                "c:\\GIT_Fork\\ROMify\\examples\\1D_RDE\\input_file.inp"
+                "c:\\GIT_Fork\\ROMify\\examples\\1D_RDE\\input_file_one_step_reaction.inp"
             ]
         }
     ]
