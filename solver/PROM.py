@@ -120,8 +120,6 @@ def results_recorder(solver_param,state,rom_param=None):
             np.save(os.path.join(dir_results,'samples_user'  ,f"{save_title}_samples_user.npy")   , rom_param['S_indx_user'])
             np.save(os.path.join(dir_results,'samples_solver',f"{save_title}_samples_solver.npy") , rom_param['S_indx_solver'])
 
-
-
 def advance_one_time_step(solver_param,state,physics,time_integration,rom_param=None):
 
     #####################################################
@@ -157,13 +155,18 @@ def advance_one_time_step(solver_param,state,physics,time_integration,rom_param=
     state['Q_cons']    = state['qr']
 
     # find the solution only at sampled points
-    state              = time_integration.advance_time(solver_param,rom_param,state,physics)
+    if solver_param['rom_method'] == 'galerkin':
+        state              = time_integration.advance_time_galerkin(solver_param,rom_param,state,physics)
+    if solver_param['rom_method'] == 'lspg':
+        state              = time_integration.advance_time_lspg(solver_param,rom_param,state,physics)
+
     qr_new             = state['Q_cons']
 
     # Estimate full state
-    Q_new_solver_int          = q_ref + (denorm * (basis @ state['qr']))
 
     state['qr']               = qr_new
+
+    Q_new_solver_int          = q_ref + (denorm * (basis @ state['qr']))
 
     state['Q_cons'] = reshape_func.solver_add_ghost(solver_param['cell_number'],solver_param['num_state_var'],Q_new_solver_int)
 

@@ -1,10 +1,10 @@
 # solver
-solver_mode   = FOM
+solver_mode   = PROM
 
 # time discretization
-dt            = 5e-4
-num_steps     = 500
-time_scheme   = FDF
+dt            = 5e-5
+num_steps     = 5000
+time_scheme   = BDF
 
 # space discretization
 x_initial   = 0
@@ -52,7 +52,7 @@ variable1 	    = Density
 variable2 	    = Pressure
 variable3 	    = Velocity
 variable4 	    = Temprature
-update_interval = 10
+update_interval = 100
 
 # Saving
 save_interval   = 100
@@ -64,7 +64,7 @@ profiling	    = False
 injection       = False
 
 # ROM Setup
-rom_method  		    = Galerkin
+rom_method  		    = lspg
 nl_rom_model            = rbf
 arom_method		        = direct
 pod_energy  		    = 99.999
@@ -77,9 +77,9 @@ unsampled_update_freq 	= 10
 training_data_dir       = C:\GIT_Fork\ROMify\examples\sod_shock_tube\FOM_results
 training_start_iter     = 0
 training_step_iter      = 100
-training_end_iter       = 3000
+training_end_iter       = 5000
 
-rom_basis_generate       = True
+rom_basis_generate       = False
 rom_basis_dir            = C:\GIT_Fork\ROMify\examples\sod_shock_tube\precomputed_basis
 
 sarom_training_step      = 100
