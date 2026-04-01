@@ -2,32 +2,33 @@
 solver_mode   = FOM
 
 # time discretization
-dt            = 1e-9
-num_steps     = 3500
+dt            = 1e-8
+num_steps     = 10000
 time_scheme   = FDF
 
 # space discretization
 x_initial   = 0
-x_final     = 0.01
+x_final     = 0.03
 cell_number = 500 
 
 # inlet BC
 rho_inlet        = extrapolate
-vel_inlet        = 0.582289
+vel_inlet        = 71.47315142
 press_inlet      = extrapolate
-temp_inlet       = 300
-mass_frac_inlet  = [8.62408241e-03, -4.50418926e-19, -8.05978549e-17,1.36881641e-01,-1.83648598e-16, -1.10827066e-15, -1.63931542e-16, -7.94181448e-16 ,8.54494276e-01]
+temp_inlet       = 314.46442734
+mass_frac_inlet  = [9.48E-03,5.54E-20,-1.13E-17,1.37E-01,-5.26E-18,-2.00E-18,2.40E-18,2.34E-17,8.54E-01]
 
 # outlet BC
 rho_outlet        = extrapolate
 vel_outlet        = extrapolate
-press_outlet      = 101325/1000/500000
+press_outlet      = extrapolate
 temp_outlet       = extrapolate
 mass_frac_outlet  = extrapolate
 
+
 # Initial Condition
 
-ic_path = C:/GIT_Fork/ROMify/examples/free_flame/steady_IC.npy
+ic_path = C:\GIT_Fork\ROMify\examples\transient_flame\steady_IC_trans_accelerated.npy
 
 # gas model
 gas_model       = h2o2.yaml
@@ -40,8 +41,8 @@ numpy_vector    = True
 # Visualization
 visual          = True
 save_visual     = True
-variable1 	    = Density
-variable2 	    = Pressure
+variable1 	    = Heat Release
+variable2 	    = Density
 variable3 	    = Velocity
 variable4 	    = Temprature
 update_interval = 100

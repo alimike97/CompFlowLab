@@ -1,53 +1,84 @@
-# solver setup
-
-solver_mode 		= fom
-rom_method  		= galerkin
-pod_energy  		= 99.999
-hyper	    		= true
-hyper_method		= qdeim
-init_training_win 	= 10
+# solver mode
+solver_mode   = FOM
 
 # time discretization
 dt            = 1e-8
-num_steps     = 100000
-time_scheme   = explicit_fd_euler
-dual_time     = false
-res_tol       = 1e-5
+num_steps     = 10000
+time_scheme   = FDF
 
 # space discretization
 x_initial   = 0
 x_final     = 0.03
-
 cell_number = 1000 
 
-ic_path = C:/GIT_Fork/ROMify/examples/transient_flame/steady_IC_trans.npy
-
 # inlet BC
-rho_inlet        = extrap
+rho_inlet        = extrapolate
 vel_inlet        = 71.47315142
-press_inlet      = extrap
+press_inlet      = extrapolate
 temp_inlet       = 314.46442734
 mass_frac_inlet  = [9.48E-03,5.54E-20,-1.13E-17,1.37E-01,-5.26E-18,-2.00E-18,2.40E-18,2.34E-17,8.54E-01]
 
 # outlet BC
-rho_outlet        = extrap
-vel_outlet        = extrap
-press_outlet      = extrap
-temp_outlet       = extrap
-mass_frac_outlet  = extrap
+rho_outlet        = extrapolate
+vel_outlet        = extrapolate
+press_outlet      = extrapolate
+temp_outlet       = extrapolate
+mass_frac_outlet  = extrapolate
+
+
+# Initial Condition
+
+ic_path = C:\GIT_Fork\ROMify\examples\transient_flame\steady_IC_trans.npy
 
 # gas model
-gas_model   = H2/Air Combustion
-flux_scheme = roe1
-viscosity   = true
+gas_model       = h2o2.yaml
+flux_scheme     = 2nd Order Roe
+limiter	        = False
+limiter_method  = minmod
+viscous	        = True
+numpy_vector    = True
 
 # Visualization
-
-variable1 	= Density
-variable2 	= Pressure
-variable3 	= Velocity
-variable4 	= None
+visual          = True
+save_visual     = True
+variable1 	    = Heat Release
+variable2 	    = Density
+variable3 	    = Velocity
+variable4 	    = Temprature
 update_interval = 100
 
+# Saving
+save_interval   = 100
 
+# Profiling
+profiling	    = False
 
+# Injection
+injection       = False
+
+# ROM Setup
+rom_method  		    = galekin
+nl_rom_model            = rbf
+arom_method		        = direct
+pod_energy  		    = 99.999
+hyper	    		    = True
+hyper_method		    = QDEIM
+sampling_rate           = 2
+init_training_win 	    = 10
+unsampled_update_freq 	= 10
+
+training_data_dir       = C:\GIT_Fork\ROMify\examples\sod_shock_tube\FOM_results
+training_start_iter     = 0
+training_step_iter      = 100
+training_end_iter       = 5000
+
+rom_basis_generate       = False
+rom_basis_dir            = C:\GIT_Fork\ROMify\examples\sod_shock_tube\precomputed_basis
+
+sarom_training_step      = 100
+sarom_srom_solver        = PROM
+sarom_cumsum_tol         = 0.01
+sarom_moving_avg_tol     = 0.01
+
+# Restart 
+arom_restart            = False

@@ -156,7 +156,7 @@ def advance_one_time_step(solver_param,state,physics,time_integration,rom_param=
 
     # find the solution only at sampled points
     if solver_param['rom_method'] == 'galerkin':
-        state              = time_integration.advance_time_galerkin(solver_param,rom_param,state,physics)
+        state              = time_integration.advance_time(solver_param,rom_param,state,physics)
     if solver_param['rom_method'] == 'lspg':
         state              = time_integration.advance_time_lspg(solver_param,rom_param,state,physics)
 

@@ -1,5 +1,5 @@
 # solver mode
-solver_mode   = AROM
+solver_mode   = FOM
 
 # time discretization
 dt            = 1e-9
@@ -27,19 +27,20 @@ mass_frac_outlet  = extrapolate
 
 # Initial Condition
 
-ic_path = C:/GIT_Fork/ROMify2/examples/free_flame/steady_IC.npy
+ic_path = C:/GIT_Fork/ROMify/examples/free_flame/steady_IC.npy
 
 # gas model
 gas_model       = h2o2.yaml
-flux_scheme     = 1st Order Roe
+flux_scheme     = 2nd Order Roe
 limiter	        = False
 limiter_method  = minmod
 viscous	        = True
+numpy_vector    = True
 
 # Visualization
 visual          = True
-save_visual     = False
-variable1 	    = Density
+save_visual     = True
+variable1 	    = Heat Release
 variable2 	    = Pressure
 variable3 	    = Velocity
 variable4 	    = Temprature
@@ -49,26 +50,34 @@ update_interval = 100
 save_interval   = 100
 
 # Profiling
-profiling	    = True
+profiling	    = False
 
 # Injection
 injection       = False
 
 # ROM Setup
-rom_method  		    = Galerkin
+rom_method  		    = galekin
 nl_rom_model            = rbf
 arom_method		        = direct
 pod_energy  		    = 99.999
 hyper	    		    = True
 hyper_method		    = QDEIM
-sampling_rate           = 12
-init_training_win 	    = 5
+sampling_rate           = 2
+init_training_win 	    = 10
 unsampled_update_freq 	= 10
 
-training_data_dir       = ''
+training_data_dir       = C:\GIT_Fork\ROMify\examples\sod_shock_tube\FOM_results
 training_start_iter     = 0
-training_step_iter      = 10
+training_step_iter      = 100
 training_end_iter       = 5000
+
+rom_basis_generate       = False
+rom_basis_dir            = C:\GIT_Fork\ROMify\examples\sod_shock_tube\precomputed_basis
+
+sarom_training_step      = 100
+sarom_srom_solver        = PROM
+sarom_cumsum_tol         = 0.01
+sarom_moving_avg_tol     = 0.01
 
 # Restart 
 arom_restart            = False

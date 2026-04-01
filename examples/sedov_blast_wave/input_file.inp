@@ -2,28 +2,28 @@
 solver_mode   = FOM
 
 # time discretization
-dt            = 5e-6
-num_steps     = 35000
+dt            = 5e-5
+num_steps     = 3500
 time_scheme   = FDF
 
 # space discretization
 x_initial   = 0
 x_final     = 1
-cell_number = 10000 
+cell_number = 2000 
 
 # inlet BC
-rho_inlet         = periodic
-vel_inlet         = periodic
-press_inlet       = periodic
-temp_inlet        = periodic
-mass_frac_inlet   = periodic
+rho_inlet         = extrapolate
+vel_inlet         = extrapolate
+press_inlet       = extrapolate
+temp_inlet        = extrapolate
+mass_frac_inlet   = extrapolate
 
 # outlet BC
-rho_outlet        = periodic
-vel_outlet        = periodic
-press_outlet      = periodic
-temp_outlet       = periodic
-mass_frac_outlet  = periodic
+rho_outlet        = extrapolate
+vel_outlet        = extrapolate
+press_outlet      = extrapolate
+temp_outlet       = extrapolate
+mass_frac_outlet  = extrapolate
 
 
 # Initial Condition

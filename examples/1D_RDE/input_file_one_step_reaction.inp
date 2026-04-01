@@ -3,7 +3,7 @@ solver_mode   = FOM
 
 # time discretization
 dt            = 1e-9
-num_steps     = 20000
+num_steps     = 200000
 time_scheme   = FDF
 
 # space discretization
@@ -40,7 +40,7 @@ numpy_vector    = True
 
 # Visualization
 visual          = True
-save_visual     = False
+save_visual     = True
 variable1 	    = Heat Release
 variable2 	    = Pressure
 variable3 	    = MF

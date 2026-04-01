@@ -115,30 +115,6 @@ def advance_time(solver_param,rom_param,state,physics):
 
     return state
 
-def advance_time_galerkin(solver_param,rom_param,state,physics):
-
-    q_n       = state['Q_cons']
-    q_guess   = q_n 
-
-    try:
-        sol = newton_krylov(
-            lambda q: implicit_bdf_residual_calculator(q, q_guess, solver_param, rom_param, state, physics),
-            q_guess,
-            maxiter=30,
-            f_tol  = 6e-6,
-            method ='gmres'
-        )
-
-        state['Q_cons'] = sol
-
-    except NoConvergence as e:
-        # The last iterate is stored in e.args[0]
-        sol = e.args[0]
-        print("Solver did not converge. Using last iterate instead.")
-        state['Q_cons'] = sol
-
-    return state
-
 def advance_time_lspg(solver_param,rom_param,state,physics):
 
     q_n       = state['Q_cons']

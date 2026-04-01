@@ -4,7 +4,7 @@ solver_mode   = PROM
 # time discretization
 dt            = 5e-5
 num_steps     = 5000
-time_scheme   = BDF
+time_scheme   = FDF
 
 # space discretization
 x_initial   = 0
@@ -47,7 +47,7 @@ numpy_vector    = True
 
 # Visualization
 visual          = True
-save_visual     = False
+save_visual     = True
 variable1 	    = Density
 variable2 	    = Pressure
 variable3 	    = Velocity
@@ -64,13 +64,13 @@ profiling	    = False
 injection       = False
 
 # ROM Setup
-rom_method  		    = lspg
+rom_method  		    = galerkin
 nl_rom_model            = rbf
 arom_method		        = direct
 pod_energy  		    = 99.999
 hyper	    		    = True
 hyper_method		    = QDEIM
-sampling_rate           = 2
+sampling_rate           = 10
 init_training_win 	    = 10
 unsampled_update_freq 	= 10
 
