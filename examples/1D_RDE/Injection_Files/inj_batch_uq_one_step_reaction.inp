@@ -1,0 +1,7 @@
+# injection temperature (T0) [K]
+T_l       = 75  
+T_u       = 300    
+T_n       = 4   
+
+# number of processors 
+n_processor = 0    # if 0 it will automatically assign one processor for each task

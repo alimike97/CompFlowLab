@@ -87,8 +87,20 @@ sarom_srom_solver        = PROM
 sarom_cumsum_tol         = 0.01
 sarom_moving_avg_tol     = 0.01
 
-# Restart 
+# Restart
 arom_restart            = False
+
+# GMM-DO Data Assimilation Setup (used by solver_mode = GMMDOROM)
+num_ensmbl              = 10                
+rho_std                 = [0.001, 0.001]     
+vel_std                 = [0.0001, 0.0001]
+press_std               = [0.001, 0.001]
+temp_std                = [0.001, 0.001]
+obs_x_locations         = [0.1, 0.2,0.3,0.4 ,0.5, 0.6,0.7, 0.8, 0.9]
+obs_state_var_index     = [0,1,2]
+obs_std                 = 0.001
+gmm_max_complexity      = 10
+gmm_do_seed             = 0
 
 
 

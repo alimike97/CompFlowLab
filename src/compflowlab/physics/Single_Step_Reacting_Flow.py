@@ -922,10 +922,10 @@ def injection_correction(solver_param,state):
     # ref: properties before entering to injector
     # inj: properties after entering to injector
 
-    rho_in          = solver_param['injcetion_prim_state'][0]/2
+    rho_in          = solver_param['injcetion_prim_state'][0]
     v_in            = solver_param['injcetion_prim_state'][1]
     P_in            = solver_param['injcetion_prim_state'][2]
-    T_in            = solver_param['injcetion_prim_state'][3]/2
+    T_in            = solver_param['injcetion_prim_state'][3]
     # Y_in            = solver_param['injcetion_prim_state'][4:] 
     Y_in            = 1
     Y_in_full       = Y_in + np.zeros_like(Y_full)
@@ -1021,7 +1021,7 @@ def injection_correction(solver_param,state):
     ncell_interior = solver_param['cell_number']   # Interior cells only
     
     # Define smoothing region (10 cells on each side of detonation)
-    smoothing_width = 10
+    smoothing_width = 150
     smoothing_start = (detonation[0] - smoothing_width) % ncell_interior
     smoothing_end = (detonation[0] + smoothing_width) % ncell_interior
     

@@ -221,6 +221,14 @@ def init_solver(solver_param,state):
         solver_param['hyper']              =  False
         solver_param['FOM2ROM_trans_iter'] = solver_param['init_training_win']
 
+    elif solver_param['solver_mode'] == 'GMMDOROM':
+
+        import compflowlab.solver.GMMDOROM as solver_module
+
+        rom_param = {}
+        solver_param['hyper']              =  False
+        solver_param['FOM2ROM_trans_iter'] = solver_param['init_training_win']
+
     return solver_module , rom_param, state
 
 def ic_generator(solver_param,state):

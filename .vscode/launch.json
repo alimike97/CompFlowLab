@@ -11,11 +11,11 @@
             "name": "ROMify Debugger VScode",
             "type": "debugpy",
             "request": "launch",
-            "program": "c:\\GIT_Fork\\ROMify\\romify.py",
+            "program": "/Users/alish/GIT_FORK/CompFlowLab/main.py",
             "console": "integratedTerminal",
             "args": [
-                "c:\\GIT_Fork\\ROMify\\examples\\sod_shock_tube",
-                "c:\\GIT_Fork\\ROMify\\examples\\sod_shock_tube\\input_file.inp"
+                "/Users/alish/GIT_FORK/CompFlowLab/examples/sod_shock_tube",
+                "/Users/alish/GIT_FORK/CompFlowLab/examples/sod_shock_tube/input_file.inp"
             ]
         }
     ]

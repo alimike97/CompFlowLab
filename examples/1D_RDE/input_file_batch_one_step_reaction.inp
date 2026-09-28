@@ -39,7 +39,7 @@ viscous	        = True
 numpy_vector    = True
 
 # Visualization
-visual          = True
+visual          = False
 save_visual     = True
 variable1 	    = Heat Release
 variable2 	    = Pressure
@@ -55,7 +55,7 @@ profiling	    = False
 
 # Injection
 injection                 = True
-injection_state_dir       = /Users/alish/GIT_FORK/CompFlowLab/examples/1D_RDE/Injection_Files/h2o2ar_phi_1_200ms_4atm_inject_prim_state.npy
+injection_state_dir       = /Users/alish/GIT_FORK/CompFlowLab/examples/1D_RDE/Injection_Files/inj_batch_uq_one_step_reaction.inp
 rde                       = True
 injector_face_area        = 0.05
 injector_area_ratio       = 0.8

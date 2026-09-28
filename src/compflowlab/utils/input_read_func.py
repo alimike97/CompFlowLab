@@ -180,4 +180,19 @@ def init_solver_param(args,input_param):
 
     solver_param['arom_restart']          = eval(input_param['arom_restart'])
 
+    if solver_param['solver_mode']       == 'GMMDOROM':
+
+        solver_param['num_ensmbl']         = int(input_param['num_ensmbl'])
+        solver_param['rho_std']            = eval(input_param['rho_std'])
+        solver_param['vel_std']            = eval(input_param['vel_std'])
+        solver_param['press_std']          = eval(input_param['press_std'])
+        solver_param['temp_std']           = eval(input_param['temp_std'])
+
+
+        solver_param['obs_x_locations']       = eval(input_param['obs_x_locations'])
+        solver_param['obs_state_var_index']   = np.atleast_1d(eval(input_param['obs_state_var_index'])).astype(int)
+        solver_param['obs_std']               = float(input_param['obs_std'])
+        solver_param['gmm_max_complexity']    = int(input_param['gmm_max_complexity'])
+        solver_param['gmm_do_seed']           = int(input_param['gmm_do_seed'])
+
     return solver_param
