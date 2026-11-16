@@ -229,6 +229,16 @@ def init_solver(solver_param,state):
         solver_param['hyper']              =  False
         solver_param['FOM2ROM_trans_iter'] = solver_param['init_training_win']
 
+    elif solver_param['solver_mode'] == 'TAUENKF':
+
+        import compflowlab.solver.TAUENKF as solver_module
+
+        if solver_param['gas_model'].endswith('.yaml'):
+            raise ValueError('TAUENKF supports gas_model = Air or a one-step chemistry file (.inp)')
+
+        rom_param = {}
+        solver_param['hyper'] = False
+
     return solver_module , rom_param, state
 
 def ic_generator(solver_param,state):
@@ -287,7 +297,15 @@ def ic_generator(solver_param,state):
 
 def init_dir(solver_param):
 
-    dir_results = os.path.join(solver_param['working_dir'], f"{solver_param['solver_mode']}_results")
+    if solver_param['solver_mode'] == 'TAUENKF':
+
+        # physical and tau runs of the same case are kept side by side
+        dir_results = os.path.join(solver_param['working_dir'], f"TAUENKF_{solver_param['enkf_space']}_results")
+
+    else:
+
+        dir_results = os.path.join(solver_param['working_dir'], f"{solver_param['solver_mode']}_results")
+
     solver_param['dir_results'] = dir_results
 
     # Check if the directory exists
@@ -299,8 +317,16 @@ def init_dir(solver_param):
     # Create a new directory
     os.makedirs(dir_results)
 
+    # create ensemble data assimilation folders
+    if solver_param['solver_mode'] == 'TAUENKF':
+
+        os.makedirs( os.path.join(dir_results, 'mean')     )
+        os.makedirs( os.path.join(dir_results, 'ensemble') )
+        os.makedirs( os.path.join(dir_results, 'truth')    )
+        os.makedirs( os.path.join(dir_results, 'da')       )
+
     # create rom related folders if we are running rom
-    if solver_param['solver_mode'] != 'FOM':
+    elif solver_param['solver_mode'] != 'FOM':
 
         os.makedirs( os.path.join(dir_results, 'cons_prim')     )
         os.makedirs( os.path.join(dir_results, 'res')           )

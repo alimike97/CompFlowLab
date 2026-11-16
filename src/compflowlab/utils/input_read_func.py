@@ -195,4 +195,61 @@ def init_solver_param(args,input_param):
         solver_param['gmm_max_complexity']    = int(input_param['gmm_max_complexity'])
         solver_param['gmm_do_seed']           = int(input_param['gmm_do_seed'])
 
+    if solver_param['solver_mode']       == 'TAUENKF':
+
+        # ensemble (uniform ranges)
+        #   shock tube IC (two regions) : uncertain diaphragm location and left pressure
+        #   IC profile on a ring (RDE)  : uncertain wave position (shift) and wave strength (amplitude)
+        solver_param['num_ensmbl']            = int(input_param['num_ensmbl'])
+        solver_param['ens_seed']              = int(input_param['ens_seed'])
+
+        for key in ['ens_x_diaphragm_range', 'ens_press_left_range', 'ens_shift_range', 'ens_amplitude_range']:
+            if key in input_param:
+                solver_param[key]             = eval(input_param[key])
+
+        if 'ic_path' in input_param:
+            required = ['ens_shift_range', 'ens_amplitude_range']
+        else:
+            required = ['ens_x_diaphragm_range', 'ens_press_left_range']
+
+        missing = [key for key in required if key not in solver_param]
+        if missing:
+            raise ValueError(f'TAUENKF needs {missing} in the input file for this initial condition')
+
+        # the member used as truth (observations); None -> the median member (chosen in TAUENKF.init_ensemble)
+        if 'obs_member_index' in input_param:
+            solver_param['obs_member_index']  = int(input_param['obs_member_index'])
+        else:
+            solver_param['obs_member_index']  = None
+
+        # EnKF setup
+        solver_param['enkf_space']            = input_param['enkf_space']           # tau | physical
+        solver_param['enkf_seed']             = int(input_param['enkf_seed'])
+        solver_param['da_start_iter']         = int(input_param['da_start_iter'])
+        solver_param['da_interval']           = int(input_param['da_interval'])
+        solver_param['da_state_var_index']    = np.atleast_1d(eval(input_param['da_state_var_index'])).astype(int)
+
+        # observations
+        solver_param['obs_x_locations']       = np.atleast_1d(eval(input_param['obs_x_locations'])).astype(float)
+        solver_param['obs_state_var_index']   = np.atleast_1d(eval(input_param['obs_state_var_index'])).astype(int)
+        obs_std                               = np.atleast_1d(eval(input_param['obs_std'])).astype(float)   # scalar or one per observed variable
+        solver_param['obs_std_vec']           = np.repeat(np.broadcast_to(obs_std, solver_param['obs_state_var_index'].shape),
+                                                          len(solver_param['obs_x_locations']))
+
+        # tau transformation
+        solver_param['tau_n_jumps']           = np.atleast_1d(eval(input_param['tau_n_jumps'])).astype(int)  # one per DA variable
+        solver_param['tau_n_levels']          = int(input_param['tau_n_levels'])
+        solver_param['tau_s_levels']          = np.linspace(0, 1, solver_param['tau_n_levels'])
+        solver_param['tau_regularization']    = float(input_param['tau_regularization'])
+        solver_param['tau_flat_tol']          = float(input_param['tau_flat_tol'])
+        solver_param['tau_feature_frac']      = float(input_param['tau_feature_frac'])
+        solver_param['tau_smooth_cells']      = int(input_param['tau_smooth_cells'])
+
+        if solver_param['enkf_space'] not in ('tau', 'physical'):
+            raise ValueError("enkf_space must be 'tau' or 'physical'")
+        if len(solver_param['tau_n_jumps']) != len(solver_param['da_state_var_index']):
+            raise ValueError('tau_n_jumps needs one entry per da_state_var_index entry')
+        if not set(solver_param['obs_state_var_index']) <= set(solver_param['da_state_var_index']):
+            raise ValueError('every observed variable must be part of the DA state (da_state_var_index)')
+
     return solver_param
